@@ -6,45 +6,84 @@
   <title>名片掃描小幫手</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background-color: #f5f5f7; }
-    h2 { text-align: center; color: #333; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .dev-note { text-align: center; color: #888; font-size: 14px; margin-bottom: 15px; font-weight: bold; }
-    .btn { display: block; width: 100%; padding: 15px; background: #007AFF; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; font-weight: bold; box-sizing: border-box; }
-    .btn-secondary { background: #34C759; margin-top: 20px; }
-    .btn-upload { background: #5856D6; }
-    .btn-download { background: #8E8E93; margin-bottom: 15px; display: none; }
-    .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-    .btn-group .btn { margin-bottom: 0; flex: 1; padding: 12px 5px; font-size: 15px; }
-    label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
-    input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    /* 定義品牌主題色 */
+    :root {
+      --brand-blue: #232773;
+      --brand-orange: #F36C21;
+      --bg-color: #F4F7F9;
+      --card-bg: #FFFFFF;
+      --text-main: #333333;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background-color: var(--bg-color); color: var(--text-main); }
     
-    /* 針對原始文字框：不限制高度，完整顯示所有文字 */
+    /* 標題與 Logo 區塊設計 */
+    .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; }
+    .header-logo { height: 1.8em; object-fit: contain; }
+    h2 { margin: 0; color: var(--brand-blue); font-weight: 900; letter-spacing: 1px; font-size: 1.8em;}
+    
+    /* 科技感卡片設計 */
+    .card { background: var(--card-bg); padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(35, 39, 115, 0.08); margin-bottom: 20px; border-top: 4px solid var(--brand-blue); transition: all 0.3s ease; }
+    .card:hover { box-shadow: 0 15px 35px rgba(35, 39, 115, 0.12); }
+    
+    .dev-note { text-align: center; color: var(--brand-orange); font-size: 13px; margin-bottom: 15px; font-weight: bold; background: rgba(243, 108, 33, 0.1); padding: 8px; border-radius: 8px; }
+    
+    /* 按鈕科技感設計 */
+    .btn { display: block; width: 100%; padding: 16px; background: var(--brand-blue); color: white; text-align: center; border-radius: 10px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(35, 39, 115, 0.2); }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(35, 39, 115, 0.3); }
+    .btn:active { transform: translateY(0); }
+    
+    /* 上傳按鈕改為藍色線框風格 */
+    .btn-upload { background: transparent; color: var(--brand-blue); border: 2px solid var(--brand-blue); box-shadow: none; }
+    .btn-upload:hover { background: rgba(35, 39, 115, 0.05); box-shadow: none; }
+    
+    /* 儲存按鈕使用品牌橘色 */
+    .btn-secondary { background: var(--brand-orange); box-shadow: 0 4px 15px rgba(243, 108, 33, 0.2); margin-top: 25px; }
+    .btn-secondary:hover { box-shadow: 0 6px 20px rgba(243, 108, 33, 0.3); }
+    
+    .btn-download { background: #8E8E93; margin-bottom: 15px; display: none; box-shadow: none; }
+    .btn-group { display: flex; gap: 12px; margin-bottom: 15px; }
+    .btn-group .btn { margin-bottom: 0; flex: 1; padding: 14px 5px; font-size: 15px; }
+    
+    /* 輸入框優化 */
+    label.title-label { font-size: 13px; font-weight: 800; color: var(--brand-blue); margin-top: 15px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    input[type="text"] { width: 100%; padding: 14px; margin: 8px 0 10px; border: 1px solid #E1E5EE; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #F8FAFC; transition: all 0.2s ease; }
+    input[type="text"]:focus { border-color: var(--brand-orange); outline: none; background-color: #FFFFFF; box-shadow: 0 0 0 3px rgba(243, 108, 33, 0.1); }
+    
+    /* 終端機風格的原始文字框 */
     textarea#rawInput { 
-      background-color: #fff8e1; 
-      font-family: monospace; 
-      font-size: 18px; 
+      width: 100%; padding: 15px; margin: 8px 0 10px; box-sizing: border-box; border-radius: 10px;
+      background-color: #1E1E1E; /* 科技黑 */
+      color: #4AF626; /* 終端機綠 */
+      font-family: "Courier New", Courier, monospace; 
+      font-size: 16px; 
       line-height: 1.6; 
       overflow-y: hidden; 
       resize: none; 
       min-height: 150px;
+      border: 1px solid #333;
     }
+    textarea#rawInput:focus { outline: none; border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(35, 39, 115, 0.2); }
     
-    .name-group { display: flex; gap: 10px; }
+    .name-group { display: flex; gap: 15px; }
     .name-group div { flex: 1; }
-    #preview { max-width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
-    #status { color: #FF9500; font-weight: bold; text-align: center; margin-bottom: 15px; }
+    #preview { max-width: 100%; border-radius: 12px; display: none; margin-bottom: 15px; border: 2px solid #E1E5EE; }
+    #status { color: var(--brand-orange); font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 15px; }
     #cameraInput, #uploadInput { display: none; }
-    .hint-text { font-size: 12px; color: #666; text-align: center; margin-bottom: 15px; display: none; }
+    .hint-text { font-size: 12px; color: #888; text-align: center; margin-bottom: 15px; display: none; }
   </style>
 </head>
 <body>
 
-  <h2>名片掃描小幫手</h2>
+  <!-- 導入 Logo 與標題 -->
+  <div class="header-container">
+    <img src="Kai logo.png" alt="KAI Logo" class="header-logo">
+    <h2>名片掃描小幫手</h2>
+  </div>
 
   <div class="card">
     <!-- 新增的提示文字 -->
-    <p class="dev-note">辨識能力持續優化中，請見諒～</p>
+    <div class="dev-note">✨ 辨識能力持續優化中，請見諒～</div>
     
     <div class="btn-group">
       <label for="cameraInput" class="btn">📷 拍照掃描</label>
@@ -61,7 +100,7 @@
   </div>
 
   <div class="card" id="formCard" style="display: none;">
-    <h3>確認與修改資訊</h3>
+    <h3 style="color: var(--brand-blue); margin-top: 0; border-bottom: 2px solid #F0F4F8; padding-bottom: 10px;">確認與修改資訊</h3>
     
     <label class="title-label">🏢 公司名稱</label>
     <input type="text" id="companyInput" placeholder="請輸入公司名">
@@ -89,7 +128,8 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label">📝 原始辨識文字 (100% 完整保留)</label>
+    <label class="title-label" style="color: var(--brand-orange);">📝 原始辨識文字 (AI 擷取全紀錄)</label>
+    <!-- 終端機風格文字框 -->
     <textarea id="rawInput"></textarea>
 
     <!-- 按鈕文字已更新 -->
@@ -131,18 +171,25 @@
       saveImgBtn.style.display = 'block';
       imageHint.style.display = 'block';
       formCard.style.display = 'none';
-      statusDiv.innerText = "⏳ 正在辨識中，請稍候...";
+      statusDiv.innerText = "⏳ AI 正在深度掃描中，請稍候...";
 
       try {
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+        
+        // 【優化：強制開啟稀疏文字模式】
+        // 讓 AI 盡可能把所有分散在名片各角落的文字碎片都抓出來，不再受限於傳統段落排版
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+        });
+
         const { data: { text } } = await worker.recognize(file);
         
-        // 【優化1】：將 AI 辨識出的文字，100% 完全不加任何處理直接放入文字框
+        // 【優化：100% 無損呈現文字】
         rawInput.value = text;
         rawInput.style.height = 'auto'; 
         rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; 
         
-        // 為了讓下方的自動分類邏輯能順利運作，我們還是建立一個陣列供系統判斷使用
+        // 用於自動分類邏輯的陣列
         const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         let foundCompany = '';
@@ -231,7 +278,7 @@
         emailInput.value = foundEmails ? foundEmails[0] : '';
         addressInput.value = foundAddress;
 
-        statusDiv.innerText = "✅ 辨識完成！請確認或從下方清單複製資訊。";
+        statusDiv.innerText = "✅ 辨識完成！請確認或由下方紀錄修正資訊。";
         formCard.style.display = 'block';
         
         await worker.terminate();
