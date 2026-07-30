@@ -9,6 +9,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background-color: #f5f5f7; }
     h2 { text-align: center; color: #333; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .dev-note { text-align: center; color: #888; font-size: 14px; margin-bottom: 15px; font-weight: bold; }
     .btn { display: block; width: 100%; padding: 15px; background: #007AFF; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; font-weight: bold; box-sizing: border-box; }
     .btn-secondary { background: #34C759; margin-top: 20px; }
     .btn-upload { background: #5856D6; }
@@ -42,6 +43,9 @@
   <h2>名片掃描小幫手</h2>
 
   <div class="card">
+    <!-- 新增的提示文字 -->
+    <p class="dev-note">辨識能力持續優化中，請見諒～</p>
+    
     <div class="btn-group">
       <label for="cameraInput" class="btn">📷 拍照掃描</label>
       <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -88,7 +92,8 @@
     <label class="title-label">📝 原始辨識文字 (100% 完整保留)</label>
     <textarea id="rawInput"></textarea>
 
-    <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
+    <!-- 按鈕文字已更新 -->
+    <button id="saveBtn" class="btn btn-secondary">💾 匯入iPhone聯絡人</button>
   </div>
 
   <script>
@@ -132,13 +137,13 @@
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
         const { data: { text } } = await worker.recognize(file);
         
-        // 1. 完全保留所有文字，只刪除「全空白的行」，確保資訊 100% 呈現
-        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        
-        // 將最原始的文字放入文字框，並自動調整高度
-        rawInput.value = rawLines.join('\n');
+        // 【優化1】：將 AI 辨識出的文字，100% 完全不加任何處理直接放入文字框
+        rawInput.value = text;
         rawInput.style.height = 'auto'; 
         rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; 
+        
+        // 為了讓下方的自動分類邏輯能順利運作，我們還是建立一個陣列供系統判斷使用
+        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         let foundCompany = '';
         let foundCname = '';
@@ -147,17 +152,14 @@
         let foundAddress = '';
         let cNameLineIndex = -1; 
         
-        // 2. 核心邏輯判斷 (基於完整未過濾的 rawLines 進行判斷)
         for (let i = 0; i < rawLines.length; i++) {
           let line = rawLines[i];
-          let noSpaceLine = line.replace(/\s+/g, ''); // 輔助判斷：去除空白的字串
+          let noSpaceLine = line.replace(/\s+/g, ''); 
           
-          // 【優化公司名稱】：只要包含「公司」，整行連同符號都抓進去
           if (!foundCompany && noSpaceLine.includes('公司')) {
             foundCompany = noSpaceLine;
           }
 
-          // 【優化中文姓名】
           if (!foundCname) {
             let tempLine = noSpaceLine;
             jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
@@ -173,7 +175,6 @@
             }
           }
 
-          // 【地址】
           if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
             let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
             if (addrMatch) {
@@ -182,7 +183,6 @@
           }
         }
 
-        // 【英文姓名】
         let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
         let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
 
