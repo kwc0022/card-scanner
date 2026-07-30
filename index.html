@@ -80,10 +80,10 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
-    // 台灣常見姓氏 (用來判斷中文名)
+    // 判斷用字典清單
     const twSurnames = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','洪','郭','邱','曾','廖','賴','徐','周','潘','蘇','簡','莊','侯','江','葉','彭','呂','羅','高','連','顏','柯','鐘','游','盧'];
-    // 常見英文姓氏拼音 (用來判斷英文名)
     const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
+    const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表'];
 
     async function processImage(e) {
       const file = e.target.files[0];
@@ -99,8 +99,6 @@
         const { data: { text } } = await worker.recognize(file);
         
         rawInput.value = text;
-        
-        // 將辨識文字以「換行」切割成一行一行，準備逐行分析
         const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         let foundCompany = '';
@@ -108,51 +106,64 @@
         let foundEname = '';
         let foundAddress = '';
 
-        // 逐行進行邏輯判斷
         for (let line of lines) {
           
-          // 【標準 1：公司名】文字最後面有「公司」
-          if (line.endsWith('公司')) {
+          // 【優化公司名】
+          if (line.endsWith('公司') && !foundCompany) {
             foundCompany = line;
           }
 
-          // 【標準 3：中文姓名】2-4個中文字，且開頭是常見姓氏
-          // 先把該行的空白去掉
-          let cleanLine = line.replace(/\s+/g, ''); 
-          // 檢查長度是否介於 2-4，且完全是中文
-          if (cleanLine.length >= 2 && cleanLine.length <= 4 && /^[\u4e00-\u9fa5]+$/.test(cleanLine)) {
-            // 檢查第一個字是否在常見姓氏名單內
-            if (twSurnames.includes(cleanLine[0])) {
-              foundCname = cleanLine;
+          // 【優化中文姓名】
+          if (!foundCname) {
+            // 1. 去除所有空白 (解決「王 大 明」的問題)
+            let noSpaceLine = line.replace(/\s+/g, '');
+            // 2. 過濾掉常見的職稱 (解決「總經理王大明」的問題)
+            jobTitles.forEach(title => { noSpaceLine = noSpaceLine.replace(title, ''); });
+            
+            // 3. 在剩下的字中，尋找連續 2~4 個中文字的區塊
+            const cMatches = noSpaceLine.match(/[\u4e00-\u9fa5]{2,4}/g);
+            if (cMatches) {
+              for (let match of cMatches) {
+                // 如果這塊中文字的首字在常見姓氏中，就認定是中文名！
+                if (twSurnames.includes(match[0])) {
+                  foundCname = match;
+                  break;
+                }
+              }
             }
           }
 
-          // 【標準 4：英文姓名】英文字串，且包含常見姓氏拼音
-          // 檢查是否只包含英文字母、空白、逗號、點或橫線
-          if (/^[A-Za-z\s,\.-]+$/.test(line)) {
+          // 【優化英文姓名】
+          // 確保該行有英文，且不是 Email 或 網址
+          if (!foundEname && /[A-Za-z]/.test(line) && !line.includes('@') && !line.includes('www') && !line.includes('http')) {
             let upperLine = line.toUpperCase();
-            let hasSurname = enSurnames.some(surname => upperLine.includes(surname));
-            if (hasSurname) {
-              foundEname = line;
+            // 如果該行包含英文姓氏
+            if (enSurnames.some(surname => upperLine.includes(surname))) {
+              // 抽出這行裡面「純英文與空白」的部分，剃除奇怪的符號或中文字
+              let engBlocks = line.match(/[A-Za-z\s\.\-]+/g);
+              if (engBlocks) {
+                // 找出最長的一段英文，通常這就是完整的英文名字
+                let bestMatch = engBlocks.sort((a, b) => b.length - a.length)[0].trim();
+                // 排除太短的不合理字串
+                if (bestMatch.length >= 3) {
+                  foundEname = bestMatch;
+                }
+              }
             }
           }
 
-          // 同場加映：簡易抓取地址 (含有 縣/市 且含有 區/市/鄉/鎮)
-          if ((line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
+          // 【地址】
+          if ((line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街')) && !foundAddress) {
             foundAddress = line;
           }
         }
 
-        // 【標準 2：手機號碼】09開頭 或 +886開頭 (用正則表達式抓取)
-        // \s* 代表容許數字中間有空白，-? 代表容許有橫線
+        // 手機與Email正則不變 (這部分本來就很精準)
         const phoneRegex = /(?:09\d{2}[\s\-]?\d{3}[\s\-]?\d{3}|\+886[\s\-]?9\d{2}[\s\-]?\d{3}[\s\-]?\d{3})/g;
         const foundPhones = text.match(phoneRegex);
-        
-        // 抓 Email
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
         const foundEmails = text.match(emailRegex);
 
-        // 填入所有判斷結果
         companyInput.value = foundCompany;
         cnameInput.value = foundCname;
         enameInput.value = foundEname;
