@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>名片掃描小幫手</title>
+  <!-- 載入 Tesseract.js (文字辨識工具) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background-color: #f5f5f7; }
+    h2 { text-align: center; color: #333; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .btn { display: block; width: 100%; padding: 15px; background: #007AFF; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; margin-bottom: 10px; font-weight: bold; }
+    .btn-secondary { background: #34C759; }
+    input[type="text"] { width: 100%; padding: 12px; margin: 8px 0 20px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    #preview { max-width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
+    #status { color: #FF9500; font-weight: bold; text-align: center; margin-bottom: 15px; }
+    /* 隱藏預設的檔案上傳按鈕，用我們自訂的按鈕取代 */
+    #cameraInput { display: none; }
+  </style>
+</head>
+<body>
+
+  <h2>名片掃描小幫手</h2>
+
+  <div class="card">
+    <!-- 呼叫相機的按鈕 -->
+    <label for="cameraInput" class="btn">📷 掃描名片</label>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment">
+    
+    <img id="preview" alt="名片預覽圖">
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="formCard" style="display: none;">
+    <h3>確認資訊</h3>
+    <p style="font-size: 12px; color: #666;">*系統會嘗試自動抓取，您也可以手動修改</p>
+    
+    <label>姓名 / 公司</label>
+    <input type="text" id="nameInput" placeholder="請輸入姓名">
+    
+    <label>電話</label>
+    <input type="text" id="phoneInput" placeholder="請輸入電話">
+    
+    <label>完整辨識文字 (供參考)</label>
+    <input type="text" id="rawInput" placeholder="原始文字">
+
+    <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
+  </div>
+
+  <script>
+    const cameraInput = document.getElementById('cameraInput');
+    const preview = document.getElementById('preview');
+    const statusDiv = document.getElementById('status');
+    const formCard = document.getElementById('formCard');
+    const nameInput = document.getElementById('nameInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const rawInput = document.getElementById('rawInput');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // 1. 當使用者拍照或上傳圖片後
+    cameraInput.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // 顯示圖片預覽
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      formCard.style.display = 'none';
+      statusDiv.innerText = "⏳ 正在辨識文字中，請稍候約 10-15 秒...";
+
+      try {
+        // 2. 開始執行文字辨識 (支援繁中、簡中、英文)
+        const worker = await Tesseract.createWorker(['eng', 'chi_tra', 'chi_sim']);
+        const { data: { text } } = await worker.recognize(file);
+        
+        // 3. 嘗試從文字中找出電話號碼 (簡易規則)
+        const phoneRegex = /(?:\+?886\-?|0)[1-9]\d{7,8}/g;
+        const foundPhones = text.match(phoneRegex);
+        
+        // 填入資料讓使用者確認
+        rawInput.value = text.replace(/\n/g, ' '); // 顯示所有文字供參考
+        phoneInput.value = foundPhones ? foundPhones[0] : '';
+        
+        // 名稱比較難自動精準抓取，先預設留空或抓第一行
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        nameInput.value = lines.length > 0 ? lines[0] : '';
+
+        statusDiv.innerText = "✅ 辨識完成！請確認下方資訊。";
+        formCard.style.display = 'block';
+        
+        await worker.terminate();
+      } catch (error) {
+        statusDiv.innerText = "❌ 辨識失敗，請重新拍攝更清晰的照片。";
+        console.error(error);
+      }
+    });
+
+    // 4. 點擊儲存聯絡人，產生 vCard 檔案
+    saveBtn.addEventListener('click', function() {
+      const name = nameInput.value || '未知聯絡人';
+      const phone = phoneInput.value || '';
+      
+      // 建立 vCard 格式內容
+      const vcardData = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+TEL;TYPE=CELL:${phone}
+END:VCARD`;
+
+      // 觸發下載
+      const blob = new Blob([vcardData], { type: 'text/vcard;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${name}.vcf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  </script>
+</body>
+</html>
