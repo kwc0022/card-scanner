@@ -18,7 +18,7 @@
     label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     
-    /* 針對原始文字框優化：隱藏捲動條，讓 JS 自動撐開高度 */
+    /* 針對原始文字框：不限制高度，完整顯示所有文字 */
     textarea#rawInput { 
       background-color: #fff8e1; 
       font-family: monospace; 
@@ -85,7 +85,7 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label">📝 原始辨識文字 (已完整展開)</label>
+    <label class="title-label">📝 原始辨識文字 (100% 完整保留)</label>
     <textarea id="rawInput"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
@@ -132,19 +132,13 @@
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
         const { data: { text } } = await worker.recognize(file);
         
-        const rawLines = text.split('\n');
-        const cleanedLines = [];
-        for (let line of rawLines) {
-          let cleaned = line.replace(/[^\u4e00-\u9fa5a-zA-Z0-9@\.\-\+\s\(\)\:]/g, '').trim();
-          if (cleaned.replace(/\s/g, '').length >= 2) {
-            cleanedLines.push(cleaned);
-          }
-        }
+        // 1. 完全保留所有文字，只刪除「全空白的行」，確保資訊 100% 呈現
+        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
-        // 填入文字並自動調整高度
-        rawInput.value = cleanedLines.join('\n');
-        rawInput.style.height = 'auto'; // 先重置高度
-        rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; // 根據內容撐開高度
+        // 將最原始的文字放入文字框，並自動調整高度
+        rawInput.value = rawLines.join('\n');
+        rawInput.style.height = 'auto'; 
+        rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; 
         
         let foundCompany = '';
         let foundCname = '';
@@ -153,16 +147,17 @@
         let foundAddress = '';
         let cNameLineIndex = -1; 
         
-        // --- 核心邏輯判斷 ---
-        for (let i = 0; i < cleanedLines.length; i++) {
-          let line = cleanedLines[i];
-          let noSpaceLine = line.replace(/\s+/g, ''); // 完全去除空白後的字串
+        // 2. 核心邏輯判斷 (基於完整未過濾的 rawLines 進行判斷)
+        for (let i = 0; i < rawLines.length; i++) {
+          let line = rawLines[i];
+          let noSpaceLine = line.replace(/\s+/g, ''); // 輔助判斷：去除空白的字串
           
-          // 【優化公司名稱】：無視空白干擾，只要包含「公司」，整行都抓進去
+          // 【優化公司名稱】：只要包含「公司」，整行連同符號都抓進去
           if (!foundCompany && noSpaceLine.includes('公司')) {
             foundCompany = noSpaceLine;
           }
 
+          // 【優化中文姓名】
           if (!foundCname) {
             let tempLine = noSpaceLine;
             jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
@@ -178,6 +173,7 @@
             }
           }
 
+          // 【地址】
           if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
             let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
             if (addrMatch) {
@@ -186,12 +182,12 @@
           }
         }
 
-        // 英文姓名
+        // 【英文姓名】
         let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
-        let searchEnd = cNameLineIndex !== -1 ? Math.min(cleanedLines.length - 1, cNameLineIndex + 2) : cleanedLines.length - 1;
+        let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
 
         for (let i = searchStart; i <= searchEnd; i++) {
-          let line = cleanedLines[i];
+          let line = rawLines[i];
           
           if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
             let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
