@@ -4,29 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>名片掃描小幫手</title>
-  <!-- 載入 Tesseract.js (文字辨識工具) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background-color: #f5f5f7; }
     h2 { text-align: center; color: #333; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    
-    /* 按鈕樣式設計 */
     .btn { display: block; width: 100%; padding: 15px; background: #007AFF; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; font-weight: bold; box-sizing: border-box; }
     .btn-secondary { background: #34C759; margin-top: 20px; }
-    .btn-upload { background: #5856D6; } /* 上傳按鈕用紫色區分 */
-    
-    /* 讓拍照和上傳按鈕並排 */
+    .btn-upload { background: #5856D6; }
     .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
     .btn-group .btn { margin-bottom: 0; flex: 1; padding: 12px 5px; font-size: 15px; }
-
     label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     textarea { resize: vertical; background-color: #f9f9f9; }
     #preview { max-width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
     #status { color: #FF9500; font-weight: bold; text-align: center; margin-bottom: 15px; }
-    
-    /* 隱藏預設的檔案上傳框 */
     #cameraInput, #uploadInput { display: none; }
   </style>
 </head>
@@ -36,22 +28,17 @@
 
   <div class="card">
     <div class="btn-group">
-      <!-- 拍照按鈕：加上 capture="environment" 強制開啟相機 -->
       <label for="cameraInput" class="btn">📷 拍照掃描</label>
       <input type="file" id="cameraInput" accept="image/*" capture="environment">
-
-      <!-- 上傳按鈕：不加 capture，手機會跳出「照片圖庫/選擇檔案」的選項 -->
       <label for="uploadInput" class="btn btn-upload">🖼️ 上傳照片</label>
       <input type="file" id="uploadInput" accept="image/*">
     </div>
-
     <img id="preview" alt="名片預覽圖">
     <div id="status"></div>
   </div>
 
   <div class="card" id="formCard" style="display: none;">
     <h3>確認與修改資訊</h3>
-    <p style="font-size: 12px; color: #666;">*由於網頁版 AI 限制，若抓取錯誤請參考下方原始文字手動複製貼上。</p>
     
     <label class="title-label">🏢 公司名</label>
     <input type="text" id="companyInput" placeholder="請輸入公司名">
@@ -72,7 +59,7 @@
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
     <label class="title-label">📝 原始辨識文字 (供複製參考)</label>
-    <textarea id="rawInput" rows="6" placeholder="辨識出的原始文字會顯示在這裡..."></textarea>
+    <textarea id="rawInput" rows="6"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
   </div>
@@ -84,7 +71,6 @@
     const statusDiv = document.getElementById('status');
     const formCard = document.getElementById('formCard');
     
-    // 欄位 DOM
     const companyInput = document.getElementById('companyInput');
     const cnameInput = document.getElementById('cnameInput');
     const enameInput = document.getElementById('enameInput');
@@ -94,7 +80,11 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
-    // 建立一個共用的函數，無論是拍照還是上傳都會執行這段
+    // 台灣常見姓氏 (用來判斷中文名)
+    const twSurnames = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','洪','郭','邱','曾','廖','賴','徐','周','潘','蘇','簡','莊','侯','江','葉','彭','呂','羅','高','連','顏','柯','鐘','游','盧'];
+    // 常見英文姓氏拼音 (用來判斷英文名)
+    const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
+
     async function processImage(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -110,21 +100,65 @@
         
         rawInput.value = text;
         
+        // 將辨識文字以「換行」切割成一行一行，準備逐行分析
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        let foundCompany = '';
+        let foundCname = '';
+        let foundEname = '';
+        let foundAddress = '';
+
+        // 逐行進行邏輯判斷
+        for (let line of lines) {
+          
+          // 【標準 1：公司名】文字最後面有「公司」
+          if (line.endsWith('公司')) {
+            foundCompany = line;
+          }
+
+          // 【標準 3：中文姓名】2-4個中文字，且開頭是常見姓氏
+          // 先把該行的空白去掉
+          let cleanLine = line.replace(/\s+/g, ''); 
+          // 檢查長度是否介於 2-4，且完全是中文
+          if (cleanLine.length >= 2 && cleanLine.length <= 4 && /^[\u4e00-\u9fa5]+$/.test(cleanLine)) {
+            // 檢查第一個字是否在常見姓氏名單內
+            if (twSurnames.includes(cleanLine[0])) {
+              foundCname = cleanLine;
+            }
+          }
+
+          // 【標準 4：英文姓名】英文字串，且包含常見姓氏拼音
+          // 檢查是否只包含英文字母、空白、逗號、點或橫線
+          if (/^[A-Za-z\s,\.-]+$/.test(line)) {
+            let upperLine = line.toUpperCase();
+            let hasSurname = enSurnames.some(surname => upperLine.includes(surname));
+            if (hasSurname) {
+              foundEname = line;
+            }
+          }
+
+          // 同場加映：簡易抓取地址 (含有 縣/市 且含有 區/市/鄉/鎮)
+          if ((line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
+            foundAddress = line;
+          }
+        }
+
+        // 【標準 2：手機號碼】09開頭 或 +886開頭 (用正則表達式抓取)
+        // \s* 代表容許數字中間有空白，-? 代表容許有橫線
+        const phoneRegex = /(?:09\d{2}[\s\-]?\d{3}[\s\-]?\d{3}|\+886[\s\-]?9\d{2}[\s\-]?\d{3}[\s\-]?\d{3})/g;
+        const foundPhones = text.match(phoneRegex);
+        
         // 抓 Email
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
         const foundEmails = text.match(emailRegex);
-        emailInput.value = foundEmails ? foundEmails[0] : '';
 
-        // 抓手機/電話
-        const phoneRegex = /(?:09\d{2}-?\d{3}-?\d{3}|(?:\+?886\-?|0)[1-9]\d{7,8})/g;
-        const foundPhones = text.match(phoneRegex);
+        // 填入所有判斷結果
+        companyInput.value = foundCompany;
+        cnameInput.value = foundCname;
+        enameInput.value = foundEname;
         mobileInput.value = foundPhones ? foundPhones[0] : '';
-        
-        // 清空其他手動輸入欄位
-        companyInput.value = '';
-        cnameInput.value = '';
-        enameInput.value = '';
-        addressInput.value = '';
+        emailInput.value = foundEmails ? foundEmails[0] : '';
+        addressInput.value = foundAddress;
 
         statusDiv.innerText = "✅ 辨識完成！請確認或補齊下方資訊。";
         formCard.style.display = 'block';
@@ -134,17 +168,14 @@
         statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
         console.error(error);
       } finally {
-        // 重設輸入框，確保下次選擇同一張照片也能觸發辨識
         cameraInput.value = '';
         uploadInput.value = '';
       }
     }
 
-    // 監聽兩個按鈕的動作
     cameraInput.addEventListener('change', processImage);
     uploadInput.addEventListener('change', processImage);
 
-    // 儲存聯絡人
     saveBtn.addEventListener('click', function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
