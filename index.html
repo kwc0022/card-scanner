@@ -18,8 +18,16 @@
     label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     
-    /* 放大原始文字框，讓資訊一目了然 */
-    textarea { resize: vertical; background-color: #fff8e1; font-family: monospace; font-size: 18px; line-height: 1.6; height: 300px; }
+    /* 針對原始文字框優化：隱藏捲動條，讓 JS 自動撐開高度 */
+    textarea#rawInput { 
+      background-color: #fff8e1; 
+      font-family: monospace; 
+      font-size: 18px; 
+      line-height: 1.6; 
+      overflow-y: hidden; 
+      resize: none; 
+      min-height: 150px;
+    }
     
     .name-group { display: flex; gap: 10px; }
     .name-group div { flex: 1; }
@@ -42,7 +50,6 @@
     </div>
     
     <img id="preview" alt="名片預覽圖">
-    <!-- 長按提示與下載按鈕 -->
     <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
     <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
     
@@ -78,7 +85,7 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label">📝 原始辨識文字 (已放大，方便檢視與複製)</label>
+    <label class="title-label">📝 原始辨識文字 (已完整展開)</label>
     <textarea id="rawInput"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
@@ -107,7 +114,7 @@
     const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
     const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師'];
 
-    let currentImageUrl = ''; // 紀錄目前圖片的網址供下載使用
+    let currentImageUrl = ''; 
 
     async function processImage(e) {
       const file = e.target.files[0];
@@ -128,13 +135,16 @@
         const rawLines = text.split('\n');
         const cleanedLines = [];
         for (let line of rawLines) {
-          let cleaned = line.replace(/[^\u4e00-\u9fa5a-zA-Z0-9@\.\-\+\s\(\)]/g, '').trim();
+          let cleaned = line.replace(/[^\u4e00-\u9fa5a-zA-Z0-9@\.\-\+\s\(\)\:]/g, '').trim();
           if (cleaned.replace(/\s/g, '').length >= 2) {
             cleanedLines.push(cleaned);
           }
         }
         
+        // 填入文字並自動調整高度
         rawInput.value = cleanedLines.join('\n');
+        rawInput.style.height = 'auto'; // 先重置高度
+        rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; // 根據內容撐開高度
         
         let foundCompany = '';
         let foundCname = '';
@@ -146,23 +156,22 @@
         // --- 核心邏輯判斷 ---
         for (let i = 0; i < cleanedLines.length; i++) {
           let line = cleanedLines[i];
+          let noSpaceLine = line.replace(/\s+/g, ''); // 完全去除空白後的字串
           
-          if (!foundCompany && line.includes('公司')) {
-            let match = line.match(/^.*公司/);
-            if (match) {
-              foundCompany = match[0].trim();
-            }
+          // 【優化公司名稱】：無視空白干擾，只要包含「公司」，整行都抓進去
+          if (!foundCompany && noSpaceLine.includes('公司')) {
+            foundCompany = noSpaceLine;
           }
 
           if (!foundCname) {
-            let noSpaceLine = line.replace(/\s+/g, '');
-            jobTitles.forEach(title => { noSpaceLine = noSpaceLine.replace(title, ''); });
-            let cMatches = noSpaceLine.match(/[\u4e00-\u9fa5]{2,4}/g);
+            let tempLine = noSpaceLine;
+            jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
+            let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
             if (cMatches) {
               for (let match of cMatches) {
                 if (twSurnames.includes(match[0])) {
                   foundCname = match;
-                  cNameLineIndex = i; // 記下中文名所在的行數
+                  cNameLineIndex = i; 
                   break;
                 }
               }
@@ -170,15 +179,14 @@
           }
 
           if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
-            let noSpaceAddr = line.replace(/\s+/g, '');
-            let addrMatch = noSpaceAddr.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
+            let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
             if (addrMatch) {
               foundAddress = addrMatch[0];
             }
           }
         }
 
-        // 【英文姓名強化】：只在中文名字的「同一行」以及「下兩行」中尋找
+        // 英文姓名
         let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
         let searchEnd = cNameLineIndex !== -1 ? Math.min(cleanedLines.length - 1, cNameLineIndex + 2) : cleanedLines.length - 1;
 
@@ -186,30 +194,24 @@
           let line = cleanedLines[i];
           
           if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
-            // 抓出連續的英文字母 (允許中間有空白或逗號)
             let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
-            
             if (engMatches) {
               for (let match of engMatches) {
-                // 將字串用空白或逗號切開
                 let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
-                
                 if (words.length >= 2) {
                   let surnameFound = false;
-                  // 1. 先用百家姓比對
                   for (let j = 0; j < words.length; j++) {
                     if (enSurnames.includes(words[j].toUpperCase())) {
-                      foundElname = words[j]; // 找到姓氏
+                      foundElname = words[j]; 
                       words.splice(j, 1);
-                      foundEfname = words.join(' '); // 剩下的當作名字
+                      foundEfname = words.join(' '); 
                       surnameFound = true;
                       break;
                     }
                   }
-                  // 2. 如果沒在百家姓裡，但剛好只有兩個英文單字 (例如 John Doe)，直接當作名跟姓
                   if (!surnameFound && words.length === 2 && !foundElname) {
-                    foundEfname = words[0]; // 第一個當名
-                    foundElname = words[1]; // 第二個當姓
+                    foundEfname = words[0]; 
+                    foundElname = words[1]; 
                   }
                 }
                 if (foundElname || foundEfname) break;
@@ -249,12 +251,11 @@
     cameraInput.addEventListener('change', processImage);
     uploadInput.addEventListener('change', processImage);
 
-    // 照片下載按鈕功能
     saveImgBtn.addEventListener('click', function() {
       if (!currentImageUrl) return;
       const link = document.createElement('a');
       link.href = currentImageUrl;
-      link.download = '名片掃描_' + new Date().getTime() + '.jpg'; // 給予時間戳記的檔名
+      link.download = '名片掃描_' + new Date().getTime() + '.jpg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
