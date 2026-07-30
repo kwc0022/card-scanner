@@ -12,16 +12,21 @@
     .btn { display: block; width: 100%; padding: 15px; background: #007AFF; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-size: 16px; border: none; cursor: pointer; font-weight: bold; box-sizing: border-box; }
     .btn-secondary { background: #34C759; margin-top: 20px; }
     .btn-upload { background: #5856D6; }
+    .btn-download { background: #8E8E93; margin-bottom: 15px; display: none; }
     .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
     .btn-group .btn { margin-bottom: 0; flex: 1; padding: 12px 5px; font-size: 15px; }
     label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    textarea { resize: vertical; background-color: #fff8e1; font-family: monospace; font-size: 16px; line-height: 1.5; }
+    
+    /* 放大原始文字框，讓資訊一目了然 */
+    textarea { resize: vertical; background-color: #fff8e1; font-family: monospace; font-size: 18px; line-height: 1.6; height: 300px; }
+    
     .name-group { display: flex; gap: 10px; }
     .name-group div { flex: 1; }
     #preview { max-width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
     #status { color: #FF9500; font-weight: bold; text-align: center; margin-bottom: 15px; }
     #cameraInput, #uploadInput { display: none; }
+    .hint-text { font-size: 12px; color: #666; text-align: center; margin-bottom: 15px; display: none; }
   </style>
 </head>
 <body>
@@ -35,7 +40,12 @@
       <label for="uploadInput" class="btn btn-upload">🖼️ 上傳照片</label>
       <input type="file" id="uploadInput" accept="image/*">
     </div>
+    
     <img id="preview" alt="名片預覽圖">
+    <!-- 長按提示與下載按鈕 -->
+    <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
+    <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
+    
     <div id="status"></div>
   </div>
 
@@ -50,12 +60,12 @@
 
     <div class="name-group">
       <div>
-        <label class="title-label">🔤 英文名字 (First Name)</label>
-        <input type="text" id="efnameInput" placeholder="英文名">
+        <label class="title-label">🔤 英文名字</label>
+        <input type="text" id="efnameInput" placeholder="First Name">
       </div>
       <div>
-        <label class="title-label">🔤 英文姓氏 (Last Name)</label>
-        <input type="text" id="elnameInput" placeholder="英文姓">
+        <label class="title-label">🔤 英文姓氏</label>
+        <input type="text" id="elnameInput" placeholder="Last Name">
       </div>
     </div>
     
@@ -68,8 +78,8 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label">📝 原始辨識文字 (已去除雜訊並保留原排版)</label>
-    <textarea id="rawInput" rows="8"></textarea>
+    <label class="title-label">📝 原始辨識文字 (已放大，方便檢視與複製)</label>
+    <textarea id="rawInput"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
   </div>
@@ -80,6 +90,8 @@
     const preview = document.getElementById('preview');
     const statusDiv = document.getElementById('status');
     const formCard = document.getElementById('formCard');
+    const saveImgBtn = document.getElementById('saveImgBtn');
+    const imageHint = document.getElementById('imageHint');
     
     const companyInput = document.getElementById('companyInput');
     const cnameInput = document.getElementById('cnameInput');
@@ -95,33 +107,33 @@
     const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
     const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師'];
 
+    let currentImageUrl = ''; // 紀錄目前圖片的網址供下載使用
+
     async function processImage(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      preview.src = URL.createObjectURL(file);
+      currentImageUrl = URL.createObjectURL(file);
+      preview.src = currentImageUrl;
       preview.style.display = 'block';
+      saveImgBtn.style.display = 'block';
+      imageHint.style.display = 'block';
       formCard.style.display = 'none';
       statusDiv.innerText = "⏳ 正在辨識中，請稍候...";
 
       try {
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-        // 恢復預設排版模式，不強制打亂文字
         const { data: { text } } = await worker.recognize(file);
         
-        // 1. 清洗文字：過濾雜訊，保留中英數字與必要符號
         const rawLines = text.split('\n');
         const cleanedLines = [];
         for (let line of rawLines) {
-          // 只允許中文、英文、數字、空白以及 @ . - + ( )
           let cleaned = line.replace(/[^\u4e00-\u9fa5a-zA-Z0-9@\.\-\+\s\(\)]/g, '').trim();
-          // 如果這行去除空白後還有2個以上的字，才當作有效文字保留
           if (cleaned.replace(/\s/g, '').length >= 2) {
             cleanedLines.push(cleaned);
           }
         }
         
-        // 顯示在下方文字框，現在會乾淨很多，且符合名片斷行邏輯
         rawInput.value = cleanedLines.join('\n');
         
         let foundCompany = '';
@@ -129,13 +141,12 @@
         let foundEfname = '';
         let foundElname = '';
         let foundAddress = '';
-        let cNameLineIndex = -1; // 記錄中文姓名在哪一行，用來定位英文名
+        let cNameLineIndex = -1; 
         
         // --- 核心邏輯判斷 ---
         for (let i = 0; i < cleanedLines.length; i++) {
           let line = cleanedLines[i];
           
-          // 【公司名稱】抓取「公司」這兩個字及它前面的所有字
           if (!foundCompany && line.includes('公司')) {
             let match = line.match(/^.*公司/);
             if (match) {
@@ -143,12 +154,9 @@
             }
           }
 
-          // 【中文姓名】
           if (!foundCname) {
             let noSpaceLine = line.replace(/\s+/g, '');
-            // 剃除職稱
             jobTitles.forEach(title => { noSpaceLine = noSpaceLine.replace(title, ''); });
-            // 尋找 2~4 個連續中文字
             let cMatches = noSpaceLine.match(/[\u4e00-\u9fa5]{2,4}/g);
             if (cMatches) {
               for (let match of cMatches) {
@@ -161,7 +169,6 @@
             }
           }
 
-          // 【地址】
           if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
             let noSpaceAddr = line.replace(/\s+/g, '');
             let addrMatch = noSpaceAddr.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
@@ -171,56 +178,53 @@
           }
         }
 
-        // 【英文姓名】: 根據中文名字的位置，尋找鄰近的行數
-        // 如果有找到中文名，只找中文名的上一行到下一行；如果沒找到，就全找
-        let searchRange = [];
-        if (cNameLineIndex !== -1) {
-          let start = Math.max(0, cNameLineIndex - 2);
-          let end = Math.min(cleanedLines.length - 1, cNameLineIndex + 2);
-          for (let i = start; i <= end; i++) searchRange.push(cleanedLines[i]);
-        } else {
-          searchRange = cleanedLines;
-        }
+        // 【英文姓名強化】：只在中文名字的「同一行」以及「下兩行」中尋找
+        let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
+        let searchEnd = cNameLineIndex !== -1 ? Math.min(cleanedLines.length - 1, cNameLineIndex + 2) : cleanedLines.length - 1;
 
-        for (let line of searchRange) {
-          // 排除包含 @ (信箱) 或 www (網址) 的行數
+        for (let i = searchStart; i <= searchEnd; i++) {
+          let line = cleanedLines[i];
+          
           if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
-            // 抓出該行所有的英文單字 (包含空白)
-            let engMatches = line.match(/[A-Za-z\s]+/g);
+            // 抓出連續的英文字母 (允許中間有空白或逗號)
+            let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
+            
             if (engMatches) {
               for (let match of engMatches) {
-                // 清理多餘空白，並將單字切開 (例如: "David Chen" -> ["David", "Chen"])
-                let words = match.trim().replace(/\s+/g, ' ').split(' ');
+                // 將字串用空白或逗號切開
+                let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
                 
-                if (words.length >= 2) { // 至少要有兩個單字才可能是全名
+                if (words.length >= 2) {
+                  let surnameFound = false;
+                  // 1. 先用百家姓比對
                   for (let j = 0; j < words.length; j++) {
-                    let upperWord = words[j].toUpperCase();
-                    // 如果這個單字在英文姓氏清單中
-                    if (enSurnames.includes(upperWord)) {
-                      foundElname = words[j];
-                      // 剩下的單字組合起來當作 First Name
-                      let tempWords = [...words];
-                      tempWords.splice(j, 1);
-                      foundEfname = tempWords.join(' ');
+                    if (enSurnames.includes(words[j].toUpperCase())) {
+                      foundElname = words[j]; // 找到姓氏
+                      words.splice(j, 1);
+                      foundEfname = words.join(' '); // 剩下的當作名字
+                      surnameFound = true;
                       break;
                     }
                   }
+                  // 2. 如果沒在百家姓裡，但剛好只有兩個英文單字 (例如 John Doe)，直接當作名跟姓
+                  if (!surnameFound && words.length === 2 && !foundElname) {
+                    foundEfname = words[0]; // 第一個當名
+                    foundElname = words[1]; // 第二個當姓
+                  }
                 }
-                if (foundElname) break;
+                if (foundElname || foundEfname) break;
               }
             }
           }
-          if (foundElname) break;
+          if (foundElname || foundEfname) break;
         }
 
-        // 手機與Email正則不變
         const phoneRegex = /(?:09\d{2}[\s\-]?\d{3}[\s\-]?\d{3}|\+886[\s\-]?9\d{2}[\s\-]?\d{3}[\s\-]?\d{3})/g;
         const foundPhones = text.match(phoneRegex);
         
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
         const foundEmails = text.match(emailRegex);
 
-        // 填入所有欄位
         companyInput.value = foundCompany;
         cnameInput.value = foundCname;
         efnameInput.value = foundEfname;
@@ -245,6 +249,17 @@
     cameraInput.addEventListener('change', processImage);
     uploadInput.addEventListener('change', processImage);
 
+    // 照片下載按鈕功能
+    saveImgBtn.addEventListener('click', function() {
+      if (!currentImageUrl) return;
+      const link = document.createElement('a');
+      link.href = currentImageUrl;
+      link.download = '名片掃描_' + new Date().getTime() + '.jpg'; // 給予時間戳記的檔名
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
     saveBtn.addEventListener('click', function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
@@ -254,7 +269,6 @@
       const email = emailInput.value || '';
       const address = addressInput.value || '';
       
-      // 組合英文全名
       const ename = [efname, elname].filter(Boolean).join(' ');
       
       let fullName = cname;
