@@ -16,8 +16,9 @@
     .btn-group .btn { margin-bottom: 0; flex: 1; padding: 12px 5px; font-size: 15px; }
     label.title-label { font-size: 14px; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    /* 加大原始文字框，方便選擇 */
-    textarea { resize: vertical; background-color: #fff8e1; font-family: monospace; font-size: 18px; line-height: 1.5; }
+    textarea { resize: vertical; background-color: #fff8e1; font-family: monospace; font-size: 16px; line-height: 1.5; }
+    .name-group { display: flex; gap: 10px; }
+    .name-group div { flex: 1; }
     #preview { max-width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
     #status { color: #FF9500; font-weight: bold; text-align: center; margin-bottom: 15px; }
     #cameraInput, #uploadInput { display: none; }
@@ -41,14 +42,22 @@
   <div class="card" id="formCard" style="display: none;">
     <h3>確認與修改資訊</h3>
     
-    <label class="title-label">🏢 公司名</label>
+    <label class="title-label">🏢 公司名稱</label>
     <input type="text" id="companyInput" placeholder="請輸入公司名">
 
     <label class="title-label">👤 中文姓名</label>
     <input type="text" id="cnameInput" placeholder="請輸入中文姓名">
 
-    <label class="title-label">🔤 英文姓名</label>
-    <input type="text" id="enameInput" placeholder="請輸入英文姓名">
+    <div class="name-group">
+      <div>
+        <label class="title-label">🔤 英文名字 (First Name)</label>
+        <input type="text" id="efnameInput" placeholder="英文名">
+      </div>
+      <div>
+        <label class="title-label">🔤 英文姓氏 (Last Name)</label>
+        <input type="text" id="elnameInput" placeholder="英文姓">
+      </div>
+    </div>
     
     <label class="title-label">📱 手機號碼</label>
     <input type="text" id="mobileInput" placeholder="請輸入手機號碼">
@@ -59,8 +68,8 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label">📝 原始辨識文字 (已為您斷詞，若抓錯請從此複製)</label>
-    <textarea id="rawInput" rows="12"></textarea>
+    <label class="title-label">📝 原始辨識文字 (已去除雜訊並保留原排版)</label>
+    <textarea id="rawInput" rows="8"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 儲存至聯絡人</button>
   </div>
@@ -74,7 +83,8 @@
     
     const companyInput = document.getElementById('companyInput');
     const cnameInput = document.getElementById('cnameInput');
-    const enameInput = document.getElementById('enameInput');
+    const efnameInput = document.getElementById('efnameInput');
+    const elnameInput = document.getElementById('elnameInput');
     const mobileInput = document.getElementById('mobileInput');
     const emailInput = document.getElementById('emailInput');
     const addressInput = document.getElementById('addressInput');
@@ -83,7 +93,7 @@
 
     const twSurnames = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','洪','郭','邱','曾','廖','賴','徐','周','潘','蘇','簡','莊','侯','江','葉','彭','呂','羅','高','連','顏','柯','鐘','游','盧'];
     const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
-    const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表'];
+    const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師'];
 
     async function processImage(e) {
       const file = e.target.files[0];
@@ -92,88 +102,129 @@
       preview.src = URL.createObjectURL(file);
       preview.style.display = 'block';
       formCard.style.display = 'none';
-      statusDiv.innerText = "⏳ 正在啟動深度辨識模式...\n大約需要 15-20 秒";
+      statusDiv.innerText = "⏳ 正在辨識中，請稍候...";
 
       try {
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-        
-        // 【關鍵升級 1】：設定 PSM 為 11 (Sparse text)
-        // 這會強制 AI 尋找分散的文字塊，而不是把它們糊成一整行，非常適合排版混亂的名片
-        await worker.setParameters({
-          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
-        });
-
+        // 恢復預設排版模式，不強制打亂文字
         const { data: { text } } = await worker.recognize(file);
         
-        // 【關鍵升級 2】：把所有文字強制「按詞」切斷
-        // 正則表達式：抓出所有「連續的中文字」或是「連續的英數與符號」
-        const allWords = text.match(/[\u4e00-\u9fa5]+|[a-zA-Z0-9@\.\-\+]+/g) || [];
+        // 1. 清洗文字：過濾雜訊，保留中英數字與必要符號
+        const rawLines = text.split('\n');
+        const cleanedLines = [];
+        for (let line of rawLines) {
+          // 只允許中文、英文、數字、空白以及 @ . - + ( )
+          let cleaned = line.replace(/[^\u4e00-\u9fa5a-zA-Z0-9@\.\-\+\s\(\)]/g, '').trim();
+          // 如果這行去除空白後還有2個以上的字，才當作有效文字保留
+          if (cleaned.replace(/\s/g, '').length >= 2) {
+            cleanedLines.push(cleaned);
+          }
+        }
         
-        // 顯示在下方文字框，每個詞強制換行，並稍微加大字體方便手機複製
-        rawInput.value = allWords.join('\n');
+        // 顯示在下方文字框，現在會乾淨很多，且符合名片斷行邏輯
+        rawInput.value = cleanedLines.join('\n');
         
         let foundCompany = '';
         let foundCname = '';
-        let foundEname = '';
+        let foundEfname = '';
+        let foundElname = '';
         let foundAddress = '';
+        let cNameLineIndex = -1; // 記錄中文姓名在哪一行，用來定位英文名
         
-        // 將原本的字串也用空白切開來做地址輔助判斷
-        const addressText = text.replace(/\s+/g, ''); 
-        
-        // 針對我們切好的「每一個詞」去跑迴圈判斷
-        for (let word of allWords) {
+        // --- 核心邏輯判斷 ---
+        for (let i = 0; i < cleanedLines.length; i++) {
+          let line = cleanedLines[i];
           
-          // 公司名
-          if (word.endsWith('公司') && !foundCompany) {
-            foundCompany = word;
-          }
-
-          // 中文姓名
-          if (!foundCname && word.length >= 2 && word.length <= 4 && /^[\u4e00-\u9fa5]+$/.test(word)) {
-            let cleanWord = word;
-            jobTitles.forEach(title => { cleanWord = cleanWord.replace(title, ''); });
-            if (cleanWord.length >= 2 && cleanWord.length <= 4 && twSurnames.includes(cleanWord[0])) {
-              foundCname = cleanWord;
+          // 【公司名稱】抓取「公司」這兩個字及它前面的所有字
+          if (!foundCompany && line.includes('公司')) {
+            let match = line.match(/^.*公司/);
+            if (match) {
+              foundCompany = match[0].trim();
             }
           }
 
-          // 英文姓名
-          if (!foundEname && /^[A-Za-z]+$/.test(word)) {
-            let upperWord = word.toUpperCase();
-            if (enSurnames.includes(upperWord)) {
-              // 找到英文姓氏，先記下來。實務上英文名常被斷開，但先抓有姓氏的詞
-              foundEname = word; 
+          // 【中文姓名】
+          if (!foundCname) {
+            let noSpaceLine = line.replace(/\s+/g, '');
+            // 剃除職稱
+            jobTitles.forEach(title => { noSpaceLine = noSpaceLine.replace(title, ''); });
+            // 尋找 2~4 個連續中文字
+            let cMatches = noSpaceLine.match(/[\u4e00-\u9fa5]{2,4}/g);
+            if (cMatches) {
+              for (let match of cMatches) {
+                if (twSurnames.includes(match[0])) {
+                  foundCname = match;
+                  cNameLineIndex = i; // 記下中文名所在的行數
+                  break;
+                }
+              }
             }
           }
-        }
-        
-        // 如果英文名被斷字 (例如: David 和 Chen 被拆成兩行)，我們在原始文字中找鄰近的英文字組合
-        if (!foundEname) {
-          const rawLines = text.split('\n');
-          for (let line of rawLines) {
-            let upperLine = line.toUpperCase();
-            if (enSurnames.some(surname => upperLine.includes(surname)) && !line.includes('@') && /[A-Za-z]/.test(line)) {
-               let engMatch = line.match(/[A-Za-z\s]+/)
-               if (engMatch) foundEname = engMatch[0].trim();
+
+          // 【地址】
+          if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
+            let noSpaceAddr = line.replace(/\s+/g, '');
+            let addrMatch = noSpaceAddr.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
+            if (addrMatch) {
+              foundAddress = addrMatch[0];
             }
           }
         }
 
-        // 地址: 用合併後的字串去抓，避免被斷字切壞
-        const addressMatch = addressText.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
-        if (addressMatch) {
-          foundAddress = addressMatch[0];
+        // 【英文姓名】: 根據中文名字的位置，尋找鄰近的行數
+        // 如果有找到中文名，只找中文名的上一行到下一行；如果沒找到，就全找
+        let searchRange = [];
+        if (cNameLineIndex !== -1) {
+          let start = Math.max(0, cNameLineIndex - 2);
+          let end = Math.min(cleanedLines.length - 1, cNameLineIndex + 2);
+          for (let i = start; i <= end; i++) searchRange.push(cleanedLines[i]);
+        } else {
+          searchRange = cleanedLines;
         }
 
+        for (let line of searchRange) {
+          // 排除包含 @ (信箱) 或 www (網址) 的行數
+          if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
+            // 抓出該行所有的英文單字 (包含空白)
+            let engMatches = line.match(/[A-Za-z\s]+/g);
+            if (engMatches) {
+              for (let match of engMatches) {
+                // 清理多餘空白，並將單字切開 (例如: "David Chen" -> ["David", "Chen"])
+                let words = match.trim().replace(/\s+/g, ' ').split(' ');
+                
+                if (words.length >= 2) { // 至少要有兩個單字才可能是全名
+                  for (let j = 0; j < words.length; j++) {
+                    let upperWord = words[j].toUpperCase();
+                    // 如果這個單字在英文姓氏清單中
+                    if (enSurnames.includes(upperWord)) {
+                      foundElname = words[j];
+                      // 剩下的單字組合起來當作 First Name
+                      let tempWords = [...words];
+                      tempWords.splice(j, 1);
+                      foundEfname = tempWords.join(' ');
+                      break;
+                    }
+                  }
+                }
+                if (foundElname) break;
+              }
+            }
+          }
+          if (foundElname) break;
+        }
+
+        // 手機與Email正則不變
         const phoneRegex = /(?:09\d{2}[\s\-]?\d{3}[\s\-]?\d{3}|\+886[\s\-]?9\d{2}[\s\-]?\d{3}[\s\-]?\d{3})/g;
         const foundPhones = text.match(phoneRegex);
         
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
         const foundEmails = text.match(emailRegex);
 
+        // 填入所有欄位
         companyInput.value = foundCompany;
         cnameInput.value = foundCname;
-        enameInput.value = foundEname;
+        efnameInput.value = foundEfname;
+        elnameInput.value = foundElname;
         mobileInput.value = foundPhones ? foundPhones[0] : '';
         emailInput.value = foundEmails ? foundEmails[0] : '';
         addressInput.value = foundAddress;
@@ -197,10 +248,14 @@
     saveBtn.addEventListener('click', function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
-      const ename = enameInput.value || '';
+      const efname = efnameInput.value || '';
+      const elname = elnameInput.value || '';
       const mobile = mobileInput.value || '';
       const email = emailInput.value || '';
       const address = addressInput.value || '';
+      
+      // 組合英文全名
+      const ename = [efname, elname].filter(Boolean).join(' ');
       
       let fullName = cname;
       if (ename) fullName += fullName ? ` (${ename})` : ename;
@@ -208,7 +263,7 @@
 
       const vcardData = `BEGIN:VCARD
 VERSION:3.0
-N:${cname};${ename};;;
+N:${elname};${cname || efname};;;
 FN:${fullName}
 ORG:${company}
 TEL;TYPE=CELL:${mobile}
