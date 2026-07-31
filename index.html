@@ -3,140 +3,252 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>名片掃描小幫手</title>
+  <title>名片小建人</title>
+  <!-- 引入科幻風格字體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
+    /* -------------------------------------------
+       未來科技 HUD 視覺主題 (Cyberpunk / Sci-Fi)
+       ------------------------------------------- */
     :root {
-      --brand-blue: #232773;
-      --brand-orange: #F36C21;
-      --bg-gradient: linear-gradient(135deg, #f6f8fd 0%, #edf1f7 100%);
-      --card-bg: rgba(255, 255, 255, 0.95);
-      --text-main: #1E293B;
-      --text-light: #64748B;
-      --border-color: #E2E8F0;
-      --input-bg: #F8FAFC;
+      --neon-cyan: #00e5ff;
+      --neon-purple: #b026ff;
+      --neon-blue: #2979ff;
+      --bg-dark: #090a0f;
+      --bg-light: #161a2b;
+      --text-main: #e0f7fa;
+      --text-muted: #647c90;
     }
 
-    body { font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; }
-    .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 25px; margin-top: 10px; }
-    .header-logo { height: 2em; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(35,39,115,0.15)); }
-    h2 { margin: 0; color: var(--brand-blue); font-weight: 800; letter-spacing: 0.5px; font-size: 1.8em;}
+    body { 
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      padding: 20px; max-width: 550px; margin: 0 auto; 
+      background: radial-gradient(circle at top center, #1b1633 0%, var(--bg-dark) 100%);
+      color: var(--text-main); min-height: 100vh;
+    }
+
+    .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; margin-top: 10px; }
+    .header-logo { height: 2.5em; object-fit: contain; filter: drop-shadow(0 0 10px var(--neon-cyan)); }
     
-    .card { background: var(--card-bg); padding: 28px 24px; border-radius: 20px; box-shadow: 0 10px 40px -10px rgba(35, 39, 115, 0.08); margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.8); backdrop-filter: blur(10px); }
+    h2 { 
+      margin: 0; font-family: 'Orbitron', sans-serif; font-weight: 900; 
+      letter-spacing: 2px; font-size: 2em; 
+      color: var(--neon-cyan);
+      text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+      text-transform: uppercase;
+    }
     
-    .dev-note-container { margin-bottom: 20px; text-align: center; }
-    .dev-note { color: var(--brand-orange); font-size: 14px; font-weight: 700; margin: 0 0 4px 0; }
-    .dev-note-sub { color: var(--text-light); font-size: 12px; margin: 0; }
+    /* 科技面板設計 */
+    .card { 
+      background: rgba(15, 20, 30, 0.65); 
+      padding: 30px 25px; border-radius: 8px; 
+      margin-bottom: 30px; 
+      border: 1px solid rgba(0, 229, 255, 0.3); 
+      box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.05), 0 10px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+      position: relative;
+    }
     
-    .btn { display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, var(--brand-blue) 0%, #303590 100%); color: white; text-align: center; border-radius: 14px; font-size: 16px; border: none; cursor: pointer; font-weight: 600; box-sizing: border-box; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(35, 39, 115, 0.2); }
-    .btn:active { transform: scale(0.98); }
-    .btn-upload { background: transparent; color: var(--brand-blue); border: 2px solid #D6DDF0; box-shadow: none; }
-    .btn-secondary { background: linear-gradient(135deg, var(--brand-orange) 0%, #FF853D 100%); box-shadow: 0 4px 15px rgba(243, 108, 33, 0.25); margin-top: 30px; }
-    .btn-download { background: #94A3B8; margin-bottom: 15px; display: none; box-shadow: none; border-radius: 12px; padding: 12px; font-size: 14px; }
+    /* 面板四角的科幻裝飾 */
+    .card::before, .card::after {
+      content: ''; position: absolute; width: 15px; height: 15px; border: 2px solid var(--neon-cyan); pointer-events: none;
+    }
+    .card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+    .dev-note-container { margin-bottom: 25px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+    .dev-note { color: var(--neon-purple); font-size: 15px; font-weight: 700; margin: 0 0 6px 0; text-shadow: 0 0 8px rgba(176, 38, 255, 0.5); }
+    .dev-note-sub { color: var(--text-muted); font-size: 13px; margin: 0; letter-spacing: 1px; }
     
-    .btn-group { display: flex; gap: 12px; margin-bottom: 15px; }
-    .btn-group .btn { margin-bottom: 0; flex: 1; padding: 14px 5px; font-size: 15px; }
+    /* 霓虹按鈕設計 */
+    .btn { 
+      display: block; width: 100%; padding: 16px; 
+      background: rgba(0, 229, 255, 0.05); 
+      color: var(--neon-cyan); text-align: center; border-radius: 4px; 
+      font-size: 17px; cursor: pointer; font-weight: 700; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;
+      box-sizing: border-box; transition: all 0.3s ease; 
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.1);
+      text-transform: uppercase;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover { background: rgba(0, 229, 255, 0.15); box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), inset 0 0 15px rgba(0, 229, 255, 0.2); }
     
-    .section-title { color: var(--brand-blue); margin: 0 0 20px 0; font-size: 18px; font-weight: 700; border-bottom: 2px solid var(--input-bg); padding-bottom: 12px; }
-    label.title-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-top: 15px; display: block; letter-spacing: 0.3px; }
+    .btn-upload { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 10px rgba(176, 38, 255, 0.2), inset 0 0 10px rgba(176, 38, 255, 0.1); }
+    .btn-upload:hover { background: rgba(176, 38, 255, 0.15); box-shadow: 0 0 20px rgba(176, 38, 255, 0.4), inset 0 0 15px rgba(176, 38, 255, 0.2); }
     
-    input[type="text"] { width: 100%; padding: 15px; margin: 6px 0 10px; border: 1.5px solid var(--border-color); border-radius: 12px; box-sizing: border-box; font-size: 16px; font-weight: 500; background-color: var(--input-bg); color: var(--text-main); transition: all 0.2s ease; }
-    input[type="text"]:focus { border-color: var(--brand-orange); outline: none; background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(243, 108, 33, 0.1); }
+    .btn-secondary { background: rgba(176, 38, 255, 0.1); border-color: var(--neon-purple); color: #fff; text-shadow: 0 0 5px var(--neon-purple); margin-top: 35px; }
     
-    textarea#rawInput { width: 100%; padding: 18px; margin: 6px 0 10px; box-sizing: border-box; border-radius: 12px; background-color: #F8FAFC; color: #334155; font-family: "SFMono-Regular", Consolas, monospace; font-size: 15px; line-height: 1.7; overflow-y: hidden; resize: none; min-height: 120px; border: 1.5px solid var(--border-color); box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); }
-    textarea#rawInput:focus { outline: none; border-color: var(--brand-blue); background-color: #FFFFFF; }
+    .btn-download { background: transparent; border-color: var(--text-muted); color: var(--text-muted); margin-bottom: 20px; display: none; box-shadow: none; font-size: 14px; }
     
-    .name-group { display: flex; gap: 12px; }
+    .btn-group { display: flex; gap: 15px; margin-bottom: 20px; }
+    .btn-group .btn { margin-bottom: 0; flex: 1; padding: 14px 5px; font-size: 16px; }
+    
+    .section-title { 
+      color: var(--neon-blue); margin: 0 0 25px 0; font-size: 20px; font-weight: 700; 
+      border-bottom: 1px solid rgba(41, 121, 255, 0.3); padding-bottom: 12px; 
+      text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 8px rgba(41, 121, 255, 0.5);
+    }
+    
+    label.title-label { font-size: 14px; font-weight: 700; color: var(--neon-cyan); margin-top: 18px; display: block; letter-spacing: 1px; }
+    
+    /* 科技感輸入框 */
+    input[type="text"] { 
+      width: 100%; padding: 14px 16px; margin: 8px 0 10px; 
+      border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 4px; 
+      box-sizing: border-box; font-size: 16px; font-weight: 500; font-family: 'Rajdhani', sans-serif;
+      background-color: rgba(0,0,0,0.4); color: #fff;
+      transition: all 0.3s ease; 
+    }
+    input[type="text"]:focus { 
+      border-color: var(--neon-cyan); outline: none; 
+      background-color: rgba(0, 229, 255, 0.05); box-shadow: 0 0 12px rgba(0, 229, 255, 0.3); 
+    }
+    
+    /* HUD 數據面板風格的文字框 */
+    textarea#rawInput { 
+      width: 100%; padding: 18px; margin: 8px 0 10px; box-sizing: border-box; border-radius: 4px; 
+      background-color: rgba(0,0,0,0.6); 
+      color: #00f3ff; text-shadow: 0 0 2px rgba(0,243,255,0.5);
+      font-family: 'Orbitron', monospace; font-size: 14px; line-height: 1.8; 
+      overflow-y: hidden; resize: none; min-height: 120px; 
+      border: 1px solid rgba(0, 229, 255, 0.2); 
+    }
+    textarea#rawInput:focus { outline: none; border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(176, 38, 255, 0.3); color: #e0b0ff; text-shadow: 0 0 3px rgba(176, 38, 255, 0.6); }
+    
+    .name-group { display: flex; gap: 15px; }
     .name-group div { flex: 1; }
     
-    #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;}
-    #status { color: var(--brand-blue); font-weight: 700; text-align: center; margin-bottom: 10px; font-size: 15px; }
+    #preview { max-width: 100%; border-radius: 4px; display: none; margin-bottom: 15px; border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(41, 121, 255, 0.3); }
+    
+    #status { color: var(--neon-purple); font-weight: 700; text-align: center; margin-bottom: 15px; font-size: 16px; letter-spacing: 1px; text-shadow: 0 0 8px rgba(176, 38, 255, 0.5); }
     #uploadInput { display: none; }
-    .hint-text { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
+    .hint-text { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
 
-    /* WebRTC 掃描器介面專屬 CSS */
-    #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: #000; z-index: 9999; }
-    #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
+    /* -------------------------------------------
+       WebRTC HUD 掃描器介面
+       ------------------------------------------- */
+    #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: #020205; z-index: 9999; }
+    #cameraVideo { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; filter: contrast(1.1); }
     .scanner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; z-index: 10000; }
-    .scanner-box { width: 85%; aspect-ratio: 1.6 / 1; border: 3px solid var(--brand-orange); border-radius: 12px; box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65); position: relative; }
-    .scanner-box::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--brand-orange); box-shadow: 0 0 10px var(--brand-orange); animation: scan-line 2s infinite linear; }
-    @keyframes scan-line { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
-    .scanner-controls { position: absolute; bottom: 80px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; }
-    #captureBtn { background: var(--brand-orange); width: 70%; border-radius: 50px; padding: 18px; font-size: 18px; font-weight: 900; box-shadow: 0 5px 20px rgba(243, 108, 33, 0.6); border: 3px solid #fff; }
-    #closeScannerBtn { background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); flex-shrink: 0; }
+    
+    /* HUD 準星設計 */
+    .scanner-box { 
+      width: 85%; aspect-ratio: 1.6 / 1; 
+      position: relative;
+      box-shadow: 0 0 0 4000px rgba(0, 0, 7, 0.75); /* 暗色遮罩 */
+    }
+    .scanner-box::before, .scanner-box::after, .scanner-box .corner-top-right, .scanner-box .corner-bottom-left {
+      content: ''; position: absolute; width: 40px; height: 40px; border: 3px solid var(--neon-cyan); border-radius: 2px;
+    }
+    .scanner-box::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .scanner-box::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+    .scanner-box .corner-top-right { top: 0; right: 0; border-left: none; border-bottom: none; position: absolute; }
+    .scanner-box .corner-bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; position: absolute; }
+    
+    /* 掃描雷射網 */
+    .scanner-box .laser {
+      position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: var(--neon-purple); box-shadow: 0 0 15px 2px var(--neon-purple);
+      animation: scan-line 2.5s ease-in-out infinite alternate;
+    }
+    @keyframes scan-line { 0% { top: 0; opacity: 0.5; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.5; } }
+    
+    .scanner-controls { position: absolute; bottom: 80px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 20px; padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; }
+    #captureBtn { background: rgba(0, 229, 255, 0.1); width: 65%; border-radius: 4px; padding: 18px; font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); border: 2px solid var(--neon-cyan); }
+    #closeScannerBtn { background: rgba(255,255,255,0.05); color: #fff; width: 60px; height: 60px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); flex-shrink: 0; transition: all 0.2s; }
+    #closeScannerBtn:hover { border-color: #ff1744; color: #ff1744; box-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
+    
+    .hud-text { position: absolute; top: -40px; width: 100%; text-align: center; color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; letter-spacing: 2px; font-size: 14px; text-shadow: 0 0 5px var(--neon-cyan); }
   </style>
 </head>
 <body>
 
+  <!-- HUD 相機掃描器 -->
   <div id="scannerContainer">
     <video id="cameraVideo" autoplay playsinline muted></video>
     <div class="scanner-overlay">
       <div class="scanner-box">
-        <div style="position: absolute; top: -35px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 16px;">請將名片對準框線內</div>
+        <div class="corner-top-right"></div>
+        <div class="corner-bottom-left"></div>
+        <div class="laser"></div>
+        <div class="hud-text">TARGET ALIGNMENT REQUIRED</div>
       </div>
     </div>
     <div class="scanner-controls">
       <button id="closeScannerBtn">✖</button>
-      <button id="captureBtn" class="btn">📸 拍下名片</button>
+      <button id="captureBtn" class="btn">INITIALIZE SCAN</button>
     </div>
   </div>
 
   <div class="header-container">
     <img src="Kai logo.png" alt="KAI Logo" class="header-logo">
-    <h2>名片掃描小幫手</h2>
+    <h2>名片小建人</h2>
   </div>
 
   <div class="card">
     <div class="dev-note-container">
-      <p class="dev-note">✨ 辨識能力持續優化中，請見諒～</p>
-      <p class="dev-note-sub">目前只適用繁體中文和英文</p>
+      <p class="dev-note">>>> SYSTEM UPGRADING...</p>
+      <p class="dev-note-sub">目前支援繁體中文與英文數據解析</p>
     </div>
     
     <div class="btn-group">
-      <button id="startCameraBtn" class="btn">📷 掃描名片</button>
-      <label for="uploadInput" class="btn btn-upload">🖼️ 上傳照片</label>
+      <button id="startCameraBtn" class="btn">OPTICAL SCAN</button>
+      <label for="uploadInput" class="btn btn-upload">DATA UPLOAD</label>
       <input type="file" id="uploadInput" accept="image/*">
     </div>
     
     <img id="preview" alt="名片預覽圖">
-    <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
-    <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
+    <div id="imageHint" class="hint-text">💡 SYSTEM HINT：長按影像可下載實體快取 (相簿)</div>
+    <button id="saveImgBtn" class="btn btn-download">EXPORT IMAGE DATA</button>
     <div id="status"></div>
   </div>
 
   <div class="card" id="formCard" style="display: none;">
-    <h3 class="section-title">確認與修改資訊</h3>
+    <h3 class="section-title">DATA EXTRACTION COMPLETE</h3>
     
-    <label class="title-label">🏢 公司名稱</label>
-    <input type="text" id="companyInput" placeholder="請輸入公司名">
-
-    <label class="title-label">👤 中文姓名</label>
-    <input type="text" id="cnameInput" placeholder="請輸入中文姓名">
+    <label class="title-label">🏢 公司名稱 (ORG)</label>
+    <input type="text" id="companyInput" placeholder="N/A">
 
     <div class="name-group">
       <div>
-        <label class="title-label">🔤 英文名字</label>
-        <input type="text" id="efnameInput" placeholder="First Name">
+        <label class="title-label">💼 中文職稱 (TITLE)</label>
+        <input type="text" id="cTitleInput" placeholder="N/A">
       </div>
       <div>
-        <label class="title-label">🔤 英文姓氏</label>
-        <input type="text" id="elnameInput" placeholder="Last Name">
+        <label class="title-label">💼 英文職稱 (TITLE_EN)</label>
+        <input type="text" id="eTitleInput" placeholder="N/A">
+      </div>
+    </div>
+
+    <label class="title-label">👤 中文姓名 (NAME_ZH)</label>
+    <input type="text" id="cnameInput" placeholder="N/A">
+
+    <div class="name-group">
+      <div>
+        <label class="title-label">🔤 英文名字 (FIRST)</label>
+        <input type="text" id="efnameInput" placeholder="N/A">
+      </div>
+      <div>
+        <label class="title-label">🔤 英文姓氏 (LAST)</label>
+        <input type="text" id="elnameInput" placeholder="N/A">
       </div>
     </div>
     
-    <label class="title-label">📱 手機號碼</label>
-    <input type="text" id="mobileInput" placeholder="請輸入手機號碼">
+    <label class="title-label">📱 手機號碼 (PHONE)</label>
+    <input type="text" id="mobileInput" placeholder="N/A">
 
-    <label class="title-label">✉️ Email</label>
-    <input type="text" id="emailInput" placeholder="請輸入 Email">
+    <label class="title-label">✉️ 網路信箱 (EMAIL)</label>
+    <input type="text" id="emailInput" placeholder="N/A">
 
-    <label class="title-label">📍 地址</label>
-    <input type="text" id="addressInput" placeholder="請輸入地址">
+    <label class="title-label">📍 實體位址 (ADDRESS)</label>
+    <input type="text" id="addressInput" placeholder="N/A">
     
-    <label class="title-label" style="color: var(--brand-orange);">📝 原始辨識文字 (將同步匯入聯絡人備註)</label>
+    <label class="title-label" style="color: var(--neon-purple);">📝 原始數據流 (RAW DATA -> 備註)</label>
     <textarea id="rawInput"></textarea>
 
-    <button id="saveBtn" class="btn btn-secondary">💾 匯入iPhone聯絡人</button>
+    <button id="saveBtn" class="btn btn-secondary">SYNC TO IOS CONTACTS</button>
   </div>
 
   <script>
@@ -158,15 +270,25 @@
     const cnameInput = document.getElementById('cnameInput');
     const efnameInput = document.getElementById('efnameInput');
     const elnameInput = document.getElementById('elnameInput');
+    const cTitleInput = document.getElementById('cTitleInput');
+    const eTitleInput = document.getElementById('eTitleInput');
     const mobileInput = document.getElementById('mobileInput');
     const emailInput = document.getElementById('emailInput');
     const addressInput = document.getElementById('addressInput');
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
-    const twSurnames = ['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','洪','郭','邱','曾','廖','賴','徐','周','潘','蘇','簡','莊','侯','江','葉','彭','呂','羅','高','連','顏','柯','鐘','游','盧'];
-    const enSurnames = ['CHEN', 'LIN', 'HUANG', 'CHANG', 'LEE', 'WANG', 'WU', 'LIU', 'TSAI', 'YANG', 'HSU', 'CHENG', 'HSIEH', 'HUNG', 'KUO', 'CHIU', 'TSENG', 'LIAO', 'LAI', 'CHOU', 'PAN', 'SU', 'YEH'];
-    const jobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師'];
+    // 【進化字典庫】
+    // 1. 擴充百家姓 (包含常見與罕見)
+    const twSurnames = ['趙','錢','孫','李','周','吳','鄭','王','馮','陳','褚','衛','蔣','沈','韓','楊','朱','秦','尤','許','何','呂','施','張','孔','曹','嚴','華','金','魏','陶','姜','戚','謝','鄒','喻','柏','水','竇','章','雲','蘇','潘','葛','奚','范','彭','郎','魯','韋','昌','馬','苗','鳳','花','方','俞','任','袁','柳','酆','鮑','史','唐','費','廉','岑','薛','雷','賀','倪','湯','滕','殷','羅','畢','郝','鄔','安','常','樂','于','時','傅','皮','卞','齊','康','伍','余','元','卜','顧','孟','平','黃','和','穆','蕭','尹','姚','邵','湛','汪','祁','毛','禹','狄','米','貝','明','臧','計','伏','成','戴','談','宋','茅','龐','熊','紀','舒','屈','項','祝','董','梁','杜','阮','藍','閔','席','季','麻','強','賈','路','婁','危','江','童','顏','郭','梅','盛','林','刁','鍾','徐','邱','駱','高','夏','蔡','田','樊','胡','凌','霍','虞','萬','支','柯','昝','管','盧','莫','經','房','裘','繆','干','解','應','宗','丁','宣','賁','鄧','郁','單','杭','洪','包','諸','左','石','崔','吉','鈕','龔','程','嵇','邢','滑','裴','陸','榮','翁','荀','羊','於','惠','甄','麴','家','封','芮','羿','儲','靳','汲','邴','糜','松','井','段','富','巫','烏','焦','巴','弓','牧','隗','山','谷','車','侯','宓','蓬','全','郗','班','仰','秋','仲','伊','宮','寧','仇','欒','暴','甘','鈄','厲','戎','祖','武','符','劉','景','詹','束','龍','葉','幸','司','韶','郜','黎','薊','薄','印','宿','白','懷','蒲','邰','從','鄂','索','咸','籍','賴','卓','藺','屠','蒙','池','喬','陰','鬱','胥','能','蒼','雙','聞','莘','黨','翟','譚','貢','勞','逄','姬','申','扶','堵','冉','宰','酈','雍','卻','璩','桑','桂','濮','牛','壽','通','邊','扈','燕','冀','郟','浦','尚','農','溫','別','莊','晏','柴','瞿','閻','充','慕','連','茹','習','宦','艾','魚','容','向','古','易','慎','戈','廖','庾','終','暨','居','衡','步','都','耿','滿','弘','匡','國','文','寇','廣','祿','闕','東','歐','殳','沃','利','蔚','越','夔','隆','師','鞏','厍','聶','晁','勾','敖','融','冷','訾','辛','闞','那','簡','饒','空','曾','毋','沙','乜','養','鞠','須','豐','巢','關','蒯','相','查','后','荊','紅','遊','竺','權','逯','蓋','益','桓','公','歐陽','太史','端木','上官','司馬','東方','獨孤','南宮','萬俟','聞人','夏侯','諸葛','尉遲','公羊','赫連','澹臺','皇甫','宗政','濮陽','公冶','太叔','申屠','公孫','慕容','仲孫','鍾離','長孫','宇文','司徒','鮮于','司空','閭丘','子車','亓官','司寇','巫馬','公西','顓孫','壤駟','公良','漆雕','樂正','宰父','穀梁','拓跋','夾谷','軒轅','令狐','段干','百里','呼延','東郭','南門','羊舌','微生','公戶','公玉','公儀','梁丘','公仲','公叔','公伯','朝','宗','鄶','鄺'];
+    
+    // 2. 擴充英文名與翻譯姓氏
+    const enSurnames = ['CHEN','LIN','HUANG','CHANG','LEE','WANG','WU','LIU','TSAI','YANG','HSU','CHENG','HSIEH','HUNG','KUO','CHIU','TSENG','LIAO','LAI','CHOU','PAN','SU','YEH','CHUANG','LU','CHIANG','HO','HSIAO','LO','KAO','CHIEN','SHIH','CHUNG','PENG','SHEN','YEN','TSAO','WEI','CHIN','YU','MA','SUN','TING','FENG','WEN','TU','YANG','CHOU','WU','CHENG','CHANG','CHU'];
+    const enFirstNames = ['JOHN','DAVID','MARY','ALICE','MICHAEL','JAMES','ROBERT','WILLIAM','RICHARD','THOMAS','CHARLES','DANIEL','MATTHEW','ANTHONY','MARK','PAUL','STEVEN','ANDREW','KENNETH','JOSHUA','KEVIN','BRIAN','GEORGE','EDWARD','RONALD','TIMOTHY','JASON','JEFFREY','RYAN','JACOB','GARY','NICHOLAS','ERIC','JONATHAN','STEPHEN','LARRY','JUSTIN','SCOTT','BRANDON','BENJAMIN','SAMUEL','GREGORY','ALEXANDER','FRANK','PATRICK','RAYMOND','JACK','DENNIS','JERRY','TYLER','AARON','JOSE','ADAM','NATHAN','HENRY','DOUGLAS','ZACHARY','PETER','KYLE','WALTER','ETHAN','JEREMY','CHRISTIAN','KEITH','ROGER','TERRY','GERALD','SEAN','ARTHUR','LAWRENCE','DYLAN','JESSE','WILLIE','BRYAN','RALPH','ROY','EUGENE','WAYNE','ALAN','JUAN','LOUIS','EUGENE','RUSSELL','PETE'];
+    
+    // 3. 擴充現代職稱字典 (行銷、數據、廣告)
+    const cJobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師', '行銷', '企劃', '廣告', '數據', '分析', '社群', '公關', '產品', '專案', '優化', '顧問', '策略', '營運'];
+    const eJobTitles = ['CEO', 'CTO', 'COO', 'CMO', 'CFO', 'DIRECTOR', 'MANAGER', 'ENGINEER', 'ANALYST', 'MARKETING', 'SPECIALIST', 'CONSULTANT', 'EXECUTIVE', 'DESIGNER', 'PLANNER', 'ACCOUNT', 'SALES', 'LEADER', 'HEAD', 'DATA', 'PR'];
 
     let currentImageUrl = ''; 
 
@@ -178,7 +300,7 @@
         cameraVideo.srcObject = currentStream;
         scannerContainer.style.display = 'block';
       } catch (err) {
-        alert("無法存取相機。請確認您的瀏覽器設定已允許使用相機，或改用「上傳照片」功能。");
+        alert("SYSTEM ERROR: 無法存取相機。請確認您的瀏覽器設定已允許使用相機。");
         console.error(err);
       }
     });
@@ -197,7 +319,7 @@
       canvas.height = cameraVideo.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9); 
+      const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
       stopCamera(); 
       runOCR(dataUrl); 
     });
@@ -209,44 +331,114 @@
       runOCR(imgUrl);
     });
 
-    async function runOCR(imageUrl) {
-      currentImageUrl = imageUrl;
-      preview.src = currentImageUrl;
-      preview.style.display = 'block';
-      saveImgBtn.style.display = 'block';
-      imageHint.style.display = 'block';
-      formCard.style.display = 'none';
-      statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
+    // 【新增】安全影像強化引擎：放大 10% + 飽和度對比微調 (避免中文字變亂碼)
+    function enhanceImage(imageUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // 放大 10% 提升小字辨識率
+          const scale = 1.1; 
+          let width = img.width * scale;
+          let height = img.height * scale;
 
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 提取像素進行色彩安全強化
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          
+          // 極輕微的對比度強化 (20)，不破壞中文字邊緣
+          const contrast = 20; 
+          const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+          for (let i = 0; i < data.length; i += 4) {
+            let r = data[i], g = data[i+1], b = data[i+2];
+
+            // 提升飽和度 (將顏色拉離灰階值)，讓名片墨水更明顯
+            let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            r = lum + 1.4 * (r - lum);
+            g = lum + 1.4 * (g - lum);
+            b = lum + 1.4 * (b - lum);
+
+            // 增強對比
+            r = factor * (r - 128) + 128;
+            g = factor * (g - 128) + 128;
+            b = factor * (b - 128) + 128;
+
+            data[i] = Math.min(255, Math.max(0, r));
+            data[i+1] = Math.min(255, Math.max(0, g));
+            data[i+2] = Math.min(255, Math.max(0, b));
+          }
+          ctx.putImageData(imageData, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg', 0.95));
+        };
+        img.src = imageUrl;
+      });
+    }
+
+    async function runOCR(imageUrl) {
+      formCard.style.display = 'none';
+      statusDiv.innerText = ">> IMAGE ENHANCING... (影像強化處理中)";
+      
       try {
+        // 先將影像經過安全處理
+        const enhancedDataUrl = await enhanceImage(imageUrl);
+        currentImageUrl = enhancedDataUrl;
+        
+        preview.src = currentImageUrl;
+        preview.style.display = 'block';
+        saveImgBtn.style.display = 'block';
+        imageHint.style.display = 'block';
+        
+        statusDiv.innerText = ">> AI NEURAL SCANNING... (智能文字解析中)";
+
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-        const { data: { text } } = await worker.recognize(imageUrl);
+        const { data: { text } } = await worker.recognize(enhancedDataUrl);
         
         rawInput.value = text;
         const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
-        let foundCompany = '';
-        let foundCname = '';
-        let foundEfname = '';
-        let foundElname = '';
-        let foundAddress = '';
-        let cNameLineIndex = -1; 
+        let foundCompany = '', foundCname = '', foundEfname = '', foundElname = '';
+        let foundCTitle = '', foundETitle = '', foundAddress = '';
         
+        let cNameLineIndex = -1; 
+        let cTitleLineIndex = -1;
+
+        // 第一次掃描：尋找公司、中文職稱、中文姓名、地址
         for (let i = 0; i < rawLines.length; i++) {
           let line = rawLines[i];
           let noSpaceLine = line.replace(/\s+/g, ''); 
           
-          if (!foundCompany && noSpaceLine.includes('公司')) {
-            foundCompany = noSpaceLine;
+          if (!foundCompany && noSpaceLine.includes('公司')) foundCompany = noSpaceLine;
+
+          // 判斷中文職稱
+          if (!foundCTitle) {
+            for (let title of cJobTitles) {
+              if (noSpaceLine.includes(title)) {
+                foundCTitle = noSpaceLine;
+                cTitleLineIndex = i;
+                break;
+              }
+            }
           }
 
+          // 判斷中文姓名 (嚴格判斷：百家姓開頭的 2~4 字詞)
           if (!foundCname) {
             let tempLine = noSpaceLine;
-            jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
+            // 先把職稱字眼剔除，避免誤判
+            cJobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
             let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
             if (cMatches) {
               for (let match of cMatches) {
-                if (twSurnames.includes(match[0])) {
+                let firstChar = match.charAt(0);
+                let firstTwoChars = match.substring(0, 2);
+                // 檢查單字姓氏或複姓
+                if (twSurnames.includes(firstChar) || twSurnames.includes(firstTwoChars)) {
                   foundCname = match;
                   cNameLineIndex = i; 
                   break;
@@ -257,16 +449,32 @@
 
           if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
             let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
-            if (addrMatch) {
-              foundAddress = addrMatch[0];
-            }
+            if (addrMatch) foundAddress = addrMatch[0];
           }
         }
 
-        let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
-        let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
+        // 第二次掃描：利用坐標關聯法尋找英文姓名與英文職稱
+        // 尋找英文職稱：在中文職稱上下 2 行內找
+        if (cTitleLineIndex !== -1) {
+          let start = Math.max(0, cTitleLineIndex - 2);
+          let end = Math.min(rawLines.length - 1, cTitleLineIndex + 2);
+          for (let i = start; i <= end; i++) {
+            let lineUpper = rawLines[i].toUpperCase();
+            for (let eTitle of eJobTitles) {
+              if (lineUpper.includes(eTitle)) {
+                foundETitle = rawLines[i].replace(/[^\w\s]/g, '').trim(); // 只留英文
+                break;
+              }
+            }
+            if (foundETitle) break;
+          }
+        }
 
-        for (let i = searchStart; i <= searchEnd; i++) {
+        // 尋找英文姓名：在中文姓名上下 2 行內找
+        let nameSearchStart = cNameLineIndex !== -1 ? Math.max(0, cNameLineIndex - 2) : 0;
+        let nameSearchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
+
+        for (let i = nameSearchStart; i <= nameSearchEnd; i++) {
           let line = rawLines[i];
           if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
             let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
@@ -275,6 +483,7 @@
                 let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
                 if (words.length >= 2) {
                   let surnameFound = false;
+                  // 比對百家姓英文翻譯
                   for (let j = 0; j < words.length; j++) {
                     if (enSurnames.includes(words[j].toUpperCase())) {
                       foundElname = words[j]; 
@@ -284,6 +493,19 @@
                       break;
                     }
                   }
+                  // 比對常見英文名
+                  if (!surnameFound) {
+                    for (let j = 0; j < words.length; j++) {
+                      if (enFirstNames.includes(words[j].toUpperCase())) {
+                        foundEfname = words[j];
+                        words.splice(j, 1);
+                        foundElname = words.join(' ');
+                        surnameFound = true;
+                        break;
+                      }
+                    }
+                  }
+                  // 若都沒比對到，但剛好兩個字，硬上
                   if (!surnameFound && words.length === 2 && !foundElname) {
                     foundEfname = words[0]; 
                     foundElname = words[1]; 
@@ -296,6 +518,7 @@
           if (foundElname || foundEfname) break;
         }
 
+        // 手機與 Email 淨化抓取
         const pureTextForRegex = text.replace(/\s+/g, '').replace(/[Oo]/g, '0');
         const phoneRegex = /(?:09\d{8}|8869\d{8}|\+8869\d{8})/g;
         const foundPhones = pureTextForRegex.match(phoneRegex);
@@ -306,11 +529,11 @@
         
         const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
         let foundEmails = text.match(emailRegex);
-        if (!foundEmails) {
-          foundEmails = pureTextForRegex.match(emailRegex); 
-        }
+        if (!foundEmails) foundEmails = pureTextForRegex.match(emailRegex); 
 
         companyInput.value = foundCompany;
+        cTitleInput.value = foundCTitle;
+        eTitleInput.value = foundETitle;
         cnameInput.value = foundCname;
         efnameInput.value = foundEfname;
         elnameInput.value = foundElname;
@@ -318,7 +541,7 @@
         emailInput.value = foundEmails ? foundEmails[0] : '';
         addressInput.value = foundAddress;
 
-        statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
+        statusDiv.innerText = ">> DATA EXTRACTION COMPLETE. (資料解碼完畢)";
         formCard.style.display = 'block';
         
         setTimeout(function() {
@@ -328,7 +551,7 @@
         
         await worker.terminate();
       } catch (error) {
-        statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
+        statusDiv.innerText = ">> ERROR: VISUAL DATA CORRUPTED. (辨識失敗)";
         console.error(error);
       } finally {
         uploadInput.value = ''; 
@@ -344,55 +567,55 @@
       if (!currentImageUrl) return;
       const link = document.createElement('a');
       link.href = currentImageUrl;
-      link.download = '名片掃描_' + new Date().getTime() + '.jpg';
+      link.download = 'CardScan_' + new Date().getTime() + '.jpg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     });
 
-    // --- 核心修正：針對 iOS 原生聯絡人直達設計 ---
     saveBtn.addEventListener('click', function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
       const efname = efnameInput.value || '';
       const elname = elnameInput.value || '';
+      const ctitle = cTitleInput.value || '';
+      const etitle = eTitleInput.value || '';
       const mobile = mobileInput.value || '';
       const email = emailInput.value || '';
       const address = addressInput.value || '';
       const rawText = rawInput.value || '';
       
       const ename = [efname, elname].filter(Boolean).join(' ');
+      const finalTitle = ctitle || etitle; // 優先使用中文職稱
       
       let fullName = cname;
       if (ename) fullName += fullName ? ` (${ename})` : ename;
       if (!fullName) fullName = '未知聯絡人';
 
-      // 針對 vCard 備註的跳脫處理
       let formattedNote = rawText
         .replace(/\r\n|\r|\n/g, '\\n')
         .replace(/;/g, '\\;')
         .replace(/,/g, '\\,');
 
+      // VCARD 格式，加入 TITLE 職稱欄位
       const vcardData = `BEGIN:VCARD
 VERSION:3.0
 N:${elname};${cname || efname};;;
 FN:${fullName}
 ORG:${company}
+TITLE:${finalTitle}
 TEL;TYPE=CELL:${mobile}
 EMAIL;TYPE=INTERNET:${email}
 ADR;TYPE=WORK:;;${address};;;;
 NOTE:${formattedNote}
 END:VCARD`;
 
-      // 判斷是否為 iOS 裝置 (iPhone/iPad)
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
       if (isIOS) {
-        // iOS 專屬：利用 Data URI 強制跳轉，直接喚起原生的聯絡人預覽畫面
         const dataUri = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcardData);
         window.location.href = dataUri;
       } else {
-        // 其他系統 (電腦、Android) 保持傳統檔案下載，Android 下載後會自動詢問是否加入聯絡人
         const blob = new Blob([vcardData], { type: 'text/vcard;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
