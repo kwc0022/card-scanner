@@ -6,6 +6,7 @@
   <title>名片掃描小幫手</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
+    /* 高質感現代科技主題色 */
     :root {
       --brand-blue: #232773;
       --brand-orange: #F36C21;
@@ -50,13 +51,70 @@
     .name-group div { flex: 1; }
     
     #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;}
-    
     #status { color: var(--brand-blue); font-weight: 700; text-align: center; margin-bottom: 10px; font-size: 15px; }
-    #cameraInput, #uploadInput { display: none; }
+    #uploadInput { display: none; }
     .hint-text { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
+
+    /* WebRTC 掃描器介面專屬 CSS */
+    #scannerContainer {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #000; z-index: 9999;
+    }
+    #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
+    
+    .scanner-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; pointer-events: none;
+    }
+    
+    /* 利用超大陰影創造四周半透明黑幕，中間挖空的效果 */
+    .scanner-box {
+      width: 85%; aspect-ratio: 1.6 / 1; /* 名片大約的長寬比 */
+      border: 3px solid var(--brand-orange);
+      border-radius: 12px;
+      box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65);
+      position: relative;
+    }
+    
+    /* 掃描雷射光條動畫 */
+    .scanner-box::after {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: var(--brand-orange); box-shadow: 0 0 10px var(--brand-orange);
+      animation: scan-line 2s infinite linear;
+    }
+    @keyframes scan-line {
+      0% { top: 0; }
+      50% { top: 100%; }
+      100% { top: 0; }
+    }
+    
+    .scanner-controls {
+      position: absolute; bottom: 40px; left: 0; width: 100%;
+      display: flex; justify-content: center; gap: 20px; padding: 0 20px; box-sizing: border-box;
+    }
+    #captureBtn { background: var(--brand-orange); width: 70%; border-radius: 50px; padding: 18px; font-size: 18px; box-shadow: 0 5px 20px rgba(243, 108, 33, 0.4); }
+    #closeScannerBtn { background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); }
   </style>
 </head>
 <body>
+
+  <!-- 滿版相機掃描器介面 (預設隱藏) -->
+  <div id="scannerContainer">
+    <!-- playsinline 是為了讓 iOS 不會跳出全螢幕播放器 -->
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    
+    <div class="scanner-overlay">
+      <div class="scanner-box">
+        <div style="position: absolute; top: -35px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">請將名片對準框線內</div>
+      </div>
+    </div>
+    
+    <div class="scanner-controls">
+      <button id="closeScannerBtn">✖</button>
+      <button id="captureBtn" class="btn">📸 拍下名片</button>
+    </div>
+  </div>
 
   <div class="header-container">
     <img src="Kai logo.png" alt="KAI Logo" class="header-logo">
@@ -70,8 +128,9 @@
     </div>
     
     <div class="btn-group">
-      <label for="cameraInput" class="btn">📷 拍照掃描</label>
-      <input type="file" id="cameraInput" accept="image/*" capture="environment">
+      <!-- 改為觸發自訂相機介面的按鈕 -->
+      <button id="startCameraBtn" class="btn">📷 掃描名片</button>
+      
       <label for="uploadInput" class="btn btn-upload">🖼️ 上傳照片</label>
       <input type="file" id="uploadInput" accept="image/*">
     </div>
@@ -120,7 +179,7 @@
   </div>
 
   <script>
-    const cameraInput = document.getElementById('cameraInput');
+    const startCameraBtn = document.getElementById('startCameraBtn');
     const uploadInput = document.getElementById('uploadInput');
     const preview = document.getElementById('preview');
     const statusDiv = document.getElementById('status');
@@ -128,6 +187,14 @@
     const saveImgBtn = document.getElementById('saveImgBtn');
     const imageHint = document.getElementById('imageHint');
     
+    // WebRTC 相關 DOM
+    const scannerContainer = document.getElementById('scannerContainer');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const captureBtn = document.getElementById('captureBtn');
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+    let currentStream = null;
+
+    // 表單 DOM
     const companyInput = document.getElementById('companyInput');
     const cnameInput = document.getElementById('cnameInput');
     const efnameInput = document.getElementById('efnameInput');
@@ -144,12 +211,61 @@
 
     let currentImageUrl = ''; 
 
-    async function handleFileSelect(e) {
+    // --- WebRTC 相機控制邏輯 ---
+    
+    // 1. 開啟相機
+    startCameraBtn.addEventListener('click', async () => {
+      try {
+        // 請求後置鏡頭
+        currentStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' } 
+        });
+        cameraVideo.srcObject = currentStream;
+        scannerContainer.style.display = 'block';
+      } catch (err) {
+        alert("無法存取相機。請確認您的瀏覽器設定已允許使用相機，或改用「上傳照片」功能。");
+        console.error(err);
+      }
+    });
+
+    // 2. 關閉相機
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+      scannerContainer.style.display = 'none';
+    }
+    closeScannerBtn.addEventListener('click', stopCamera);
+
+    // 3. 拍照並交給 OCR 處理
+    captureBtn.addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraVideo.videoWidth;
+      canvas.height = cameraVideo.videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      // 將影片目前的畫面畫入 Canvas
+      ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高品質圖片
+      
+      stopCamera(); // 拍完立刻關閉相機節省資源
+      runOCR(dataUrl); // 執行文字辨識
+    });
+
+
+    // --- 檔案上傳控制邏輯 (備用方案) ---
+    uploadInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      
+      const imgUrl = URL.createObjectURL(file);
+      runOCR(imgUrl);
+    });
 
-      // 移除干擾的影像處理，直接還原為最高畫質原圖
-      currentImageUrl = URL.createObjectURL(file);
+
+    // --- 核心 OCR 辨識與資料處理引擎 ---
+    async function runOCR(imageUrl) {
+      currentImageUrl = imageUrl;
       preview.src = currentImageUrl;
       
       preview.style.display = 'block';
@@ -159,9 +275,8 @@
       statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
 
       try {
-        // 直接將原汁原味的圖片交給 Tesseract 進行辨識
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-        const { data: { text } } = await worker.recognize(file);
+        const { data: { text } } = await worker.recognize(imageUrl);
         
         rawInput.value = text;
         const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -261,10 +376,8 @@
 
         statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
         
-        // 【核心修正】：先將卡片顯示出來
         formCard.style.display = 'block';
         
-        // 使用 setTimeout 延遲 0.1 秒，確保瀏覽器已經把文字畫到畫面上，再精準計算高度
         setTimeout(function() {
           rawInput.style.height = 'auto'; 
           rawInput.style.height = (rawInput.scrollHeight + 10) + 'px';
@@ -275,13 +388,9 @@
         statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
         console.error(error);
       } finally {
-        cameraInput.value = '';
-        uploadInput.value = '';
+        uploadInput.value = ''; // 清除 input 讓下次選同張圖也能觸發
       }
     }
-
-    cameraInput.addEventListener('change', handleFileSelect);
-    uploadInput.addEventListener('change', handleFileSelect);
     
     // 如果使用者手動修改內容，也自動擴展高度
     rawInput.addEventListener('input', function() {
