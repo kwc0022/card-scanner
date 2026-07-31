@@ -54,80 +54,27 @@
     #uploadInput { display: none; }
     .hint-text { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
 
-    /* -------------------------------------------
-       WebRTC 掃描器介面專屬 CSS (已針對 iOS 修正)
-       ------------------------------------------- */
-    #scannerContainer {
-      display: none; position: fixed; top: 0; left: 0; width: 100vw; 
-      /* 使用 100dvh 解決 iPhone Safari 網址列遮擋問題 */
-      height: 100vh; height: 100dvh; 
-      background: #000; z-index: 9999;
-    }
+    /* WebRTC 掃描器介面專屬 CSS */
+    #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: #000; z-index: 9999; }
     #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
-    
-    .scanner-overlay {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; pointer-events: none; z-index: 10000;
-    }
-    
-    .scanner-box {
-      width: 85%; aspect-ratio: 1.6 / 1; 
-      border: 3px solid var(--brand-orange);
-      border-radius: 12px;
-      box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65);
-      position: relative;
-    }
-    
-    .scanner-box::after {
-      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-      background: var(--brand-orange); box-shadow: 0 0 10px var(--brand-orange);
-      animation: scan-line 2s infinite linear;
-    }
-    @keyframes scan-line {
-      0% { top: 0; }
-      50% { top: 100%; }
-      100% { top: 0; }
-    }
-    
-    /* 大幅提升按鈕高度，避開 iPhone 底部導覽列 */
-    .scanner-controls {
-      position: absolute; 
-      bottom: 80px; /* 拉高位置 */
-      padding-bottom: env(safe-area-inset-bottom); /* 適應 iPhone 下方的橫條 */
-      left: 0; width: 100%;
-      display: flex; justify-content: center; align-items: center; gap: 15px; 
-      padding-left: 20px; padding-right: 20px; box-sizing: border-box;
-      z-index: 10001; /* 確保按鈕在最上層可點擊 */
-    }
-    
-    #captureBtn { 
-      background: var(--brand-orange); width: 70%; border-radius: 50px; 
-      padding: 18px; font-size: 18px; font-weight: 900; 
-      box-shadow: 0 5px 20px rgba(243, 108, 33, 0.6); 
-      border: 3px solid #fff;
-    }
-    #closeScannerBtn { 
-      background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; 
-      border-radius: 50%; border: 2px solid white; font-size: 24px; 
-      display: flex; align-items: center; justify-content: center; 
-      cursor: pointer; backdrop-filter: blur(5px); flex-shrink: 0;
-    }
+    .scanner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; z-index: 10000; }
+    .scanner-box { width: 85%; aspect-ratio: 1.6 / 1; border: 3px solid var(--brand-orange); border-radius: 12px; box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65); position: relative; }
+    .scanner-box::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--brand-orange); box-shadow: 0 0 10px var(--brand-orange); animation: scan-line 2s infinite linear; }
+    @keyframes scan-line { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+    .scanner-controls { position: absolute; bottom: 80px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; }
+    #captureBtn { background: var(--brand-orange); width: 70%; border-radius: 50px; padding: 18px; font-size: 18px; font-weight: 900; box-shadow: 0 5px 20px rgba(243, 108, 33, 0.6); border: 3px solid #fff; }
+    #closeScannerBtn { background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); flex-shrink: 0; }
   </style>
 </head>
 <body>
 
-  <!-- 滿版相機掃描器介面 -->
   <div id="scannerContainer">
     <video id="cameraVideo" autoplay playsinline muted></video>
-    
     <div class="scanner-overlay">
       <div class="scanner-box">
         <div style="position: absolute; top: -35px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 16px;">請將名片對準框線內</div>
       </div>
     </div>
-    
-    <!-- 拍照與關閉按鈕區塊 -->
     <div class="scanner-controls">
       <button id="closeScannerBtn">✖</button>
       <button id="captureBtn" class="btn">📸 拍下名片</button>
@@ -154,7 +101,6 @@
     <img id="preview" alt="名片預覽圖">
     <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
     <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
-    
     <div id="status"></div>
   </div>
 
@@ -187,7 +133,7 @@
     <label class="title-label">📍 地址</label>
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
-    <label class="title-label" style="color: var(--brand-orange);">📝 原始辨識文字 (100% 完整紀錄)</label>
+    <label class="title-label" style="color: var(--brand-orange);">📝 原始辨識文字 (將同步匯入聯絡人備註)</label>
     <textarea id="rawInput"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 匯入iPhone聯絡人</button>
@@ -202,14 +148,12 @@
     const saveImgBtn = document.getElementById('saveImgBtn');
     const imageHint = document.getElementById('imageHint');
     
-    // WebRTC 相關 DOM
     const scannerContainer = document.getElementById('scannerContainer');
     const cameraVideo = document.getElementById('cameraVideo');
     const captureBtn = document.getElementById('captureBtn');
     const closeScannerBtn = document.getElementById('closeScannerBtn');
     let currentStream = null;
 
-    // 表單 DOM
     const companyInput = document.getElementById('companyInput');
     const cnameInput = document.getElementById('cnameInput');
     const efnameInput = document.getElementById('efnameInput');
@@ -226,7 +170,6 @@
 
     let currentImageUrl = ''; 
 
-    // --- WebRTC 相機控制邏輯 ---
     startCameraBtn.addEventListener('click', async () => {
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({ 
@@ -253,28 +196,22 @@
       canvas.width = cameraVideo.videoWidth;
       canvas.height = cameraVideo.videoHeight;
       const ctx = canvas.getContext('2d');
-      
       ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9); 
-      
       stopCamera(); 
       runOCR(dataUrl); 
     });
 
-    // --- 檔案上傳控制邏輯 (備用方案) ---
     uploadInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
       const imgUrl = URL.createObjectURL(file);
       runOCR(imgUrl);
     });
 
-    // --- 核心 OCR 辨識與資料處理引擎 ---
     async function runOCR(imageUrl) {
       currentImageUrl = imageUrl;
       preview.src = currentImageUrl;
-      
       preview.style.display = 'block';
       saveImgBtn.style.display = 'block';
       imageHint.style.display = 'block';
@@ -414,7 +351,8 @@
       document.body.removeChild(link);
     });
 
-    saveBtn.addEventListener('click', function() {
+    // 匯入聯絡人邏輯更新
+    saveBtn.addEventListener('click', async function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
       const efname = efnameInput.value || '';
@@ -422,12 +360,16 @@
       const mobile = mobileInput.value || '';
       const email = emailInput.value || '';
       const address = addressInput.value || '';
+      const rawText = rawInput.value || '';
       
       const ename = [efname, elname].filter(Boolean).join(' ');
       
       let fullName = cname;
       if (ename) fullName += fullName ? ` (${ename})` : ename;
       if (!fullName) fullName = '未知聯絡人';
+
+      // 【核心更新】將原始文字的換行符號取代為 vCard 規定的格式 \n
+      const formattedNote = rawText.replace(/\n/g, '\\n');
 
       const vcardData = `BEGIN:VCARD
 VERSION:3.0
@@ -437,16 +379,30 @@ ORG:${company}
 TEL;TYPE=CELL:${mobile}
 EMAIL;TYPE=INTERNET:${email}
 ADR;TYPE=WORK:;;${address};;;;
+NOTE:${formattedNote}
 END:VCARD`;
 
-      const blob = new Blob([vcardData], { type: 'text/vcard;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${fullName}.vcf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const file = new File([vcardData], `${fullName}.vcf`, { type: 'text/vcard' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: '匯入聯絡人',
+          });
+        } catch (error) {
+          console.log('使用者取消分享或發生錯誤', error);
+        }
+      } else {
+        const blob = new Blob([vcardData], { type: 'text/vcard;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${fullName}.vcf`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     });
   </script>
 </body>
