@@ -113,7 +113,8 @@
     .name-group { display: flex; gap: 15px; }
     .name-group div { flex: 1; }
     
-    #preview { max-width: 100%; border-radius: 4px; display: none; margin-bottom: 15px; border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(41, 121, 255, 0.3); }
+    /* 預覽圖完美服貼，不留黑邊 */
+    #preview { width: 100%; height: auto; object-fit: contain; border-radius: 4px; display: none; margin-bottom: 15px; border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(41, 121, 255, 0.3); }
     
     #status { color: var(--neon-purple); font-weight: 700; text-align: center; margin-bottom: 15px; font-size: 15px; letter-spacing: 1px; text-shadow: 0 0 8px rgba(176, 38, 255, 0.5); }
     #uploadInput { display: none; }
@@ -160,7 +161,8 @@
   <div id="scannerContainer">
     <video id="cameraVideo" autoplay playsinline muted></video>
     <div class="scanner-overlay">
-      <div class="scanner-box">
+      <!-- 這是我們要裁切的目標框 -->
+      <div class="scanner-box" id="scannerBox">
         <div class="corner-top-right"></div>
         <div class="corner-bottom-left"></div>
         <div class="laser"></div>
@@ -256,6 +258,7 @@
     
     const scannerContainer = document.getElementById('scannerContainer');
     const cameraVideo = document.getElementById('cameraVideo');
+    const scannerBox = document.getElementById('scannerBox');
     const captureBtn = document.getElementById('captureBtn');
     const closeScannerBtn = document.getElementById('closeScannerBtn');
     let currentStream = null;
@@ -303,13 +306,48 @@
     }
     closeScannerBtn.addEventListener('click', stopCamera);
 
+    // 【新增】精準裁切功能：只拍下橘色掃描框內的名片，去除多餘黑邊
     captureBtn.addEventListener('click', () => {
+      const video = cameraVideo;
+      const box = scannerBox.getBoundingClientRect();
+      const container = scannerContainer.getBoundingClientRect();
+      
+      // 計算影片在 object-fit: cover 狀態下的實際渲染尺寸
+      const videoRatio = video.videoWidth / video.videoHeight;
+      const containerRatio = container.width / container.height;
+      
+      let renderedWidth, renderedHeight, offsetX = 0, offsetY = 0;
+      
+      if (containerRatio > videoRatio) {
+        renderedWidth = container.width;
+        renderedHeight = container.width / videoRatio;
+        offsetY = (renderedHeight - container.height) / 2;
+      } else {
+        renderedHeight = container.height;
+        renderedWidth = container.height * videoRatio;
+        offsetX = (renderedWidth - container.width) / 2;
+      }
+      
+      // 換算橘色掃描框在真實影像上的座標點
+      const boxLeft = box.left + offsetX;
+      const boxTop = box.top + offsetY;
+      const scaleX = video.videoWidth / renderedWidth;
+      const scaleY = video.videoHeight / renderedHeight;
+      
+      const cropX = boxLeft * scaleX;
+      const cropY = boxTop * scaleY;
+      const cropWidth = box.width * scaleX;
+      const cropHeight = box.height * scaleY;
+      
       const canvas = document.createElement('canvas');
-      canvas.width = cameraVideo.videoWidth;
-      canvas.height = cameraVideo.videoHeight;
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+      
+      // 像剪刀一樣，只把框內的畫面畫到 Canvas 上
+      ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
       const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
+      
       stopCamera(); 
       runOCR(dataUrl); 
     });
@@ -426,19 +464,16 @@
             }
           }
 
-          // 中文地址：整行抓取
           if (!foundAddress && (noSpaceLine.includes('市') || noSpaceLine.includes('縣')) && 
               (noSpaceLine.includes('區') || noSpaceLine.includes('鄉') || noSpaceLine.includes('鎮')) && 
               (noSpaceLine.includes('路') || noSpaceLine.includes('街') || noSpaceLine.includes('大道') || noSpaceLine.includes('段'))) {
             foundAddress = line;
           }
 
-          // 英文地址：整行抓取
           if (!foundEAddress && 
               (lineUpper.includes('CITY') || lineUpper.includes('ROAD') || lineUpper.includes('STREET') || 
                lineUpper.includes('AVE') || lineUpper.includes('BOULEVARD') || lineUpper.includes('BLVD') || 
                lineUpper.includes('DISTRICT') || lineUpper.includes('COUNTY'))) {
-            // 排除含有 @ 或 www 網址的行
             if(!lineUpper.includes('@') && !lineUpper.includes('WWW.')) {
               foundEAddress = line;
             }
@@ -575,7 +610,6 @@
       const ename = [efname, elname].filter(Boolean).join(' ');
       const finalTitle = ctitle || etitle; 
       
-      // 合併中英文地址
       let combinedAddress = address;
       if (eAddress) {
         combinedAddress += combinedAddress ? ` ${eAddress}` : eAddress;
