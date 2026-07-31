@@ -18,99 +18,42 @@
       --input-bg: #F8FAFC;
     }
 
-    body { 
-      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      padding: 20px; 
-      max-width: 500px; 
-      margin: 0 auto; 
-      background: var(--bg-gradient); 
-      color: var(--text-main); 
-      min-height: 100vh;
-    }
-    
-    /* 標題與 Logo 區塊設計 */
+    body { font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; }
     .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 25px; margin-top: 10px; }
     .header-logo { height: 2em; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(35,39,115,0.15)); }
     h2 { margin: 0; color: var(--brand-blue); font-weight: 800; letter-spacing: 0.5px; font-size: 1.8em;}
     
-    /* 科技感卡片設計 (毛玻璃與柔和陰影) */
-    .card { 
-      background: var(--card-bg); 
-      padding: 28px 24px; 
-      border-radius: 20px; 
-      box-shadow: 0 10px 40px -10px rgba(35, 39, 115, 0.08); 
-      margin-bottom: 25px; 
-      border: 1px solid rgba(255,255,255,0.8);
-      backdrop-filter: blur(10px);
-    }
+    .card { background: var(--card-bg); padding: 28px 24px; border-radius: 20px; box-shadow: 0 10px 40px -10px rgba(35, 39, 115, 0.08); margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.8); backdrop-filter: blur(10px); }
     
-    /* 提示文字區塊 */
     .dev-note-container { margin-bottom: 20px; text-align: center; }
     .dev-note { color: var(--brand-orange); font-size: 14px; font-weight: 700; margin: 0 0 4px 0; }
     .dev-note-sub { color: var(--text-light); font-size: 12px; margin: 0; }
     
-    /* 按鈕高質感設計 */
-    .btn { 
-      display: block; width: 100%; padding: 16px; 
-      background: linear-gradient(135deg, var(--brand-blue) 0%, #303590 100%);
-      color: white; text-align: center; border-radius: 14px; 
-      font-size: 16px; border: none; cursor: pointer; font-weight: 600; 
-      box-sizing: border-box; transition: all 0.2s ease; 
-      box-shadow: 0 4px 15px rgba(35, 39, 115, 0.2); 
-    }
+    .btn { display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, var(--brand-blue) 0%, #303590 100%); color: white; text-align: center; border-radius: 14px; font-size: 16px; border: none; cursor: pointer; font-weight: 600; box-sizing: border-box; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(35, 39, 115, 0.2); }
     .btn:active { transform: scale(0.98); }
-    
-    .btn-upload { 
-      background: transparent; color: var(--brand-blue); 
-      border: 2px solid #D6DDF0; box-shadow: none; 
-    }
-    
-    .btn-secondary { 
-      background: linear-gradient(135deg, var(--brand-orange) 0%, #FF853D 100%); 
-      box-shadow: 0 4px 15px rgba(243, 108, 33, 0.25); margin-top: 30px; 
-    }
-    
+    .btn-upload { background: transparent; color: var(--brand-blue); border: 2px solid #D6DDF0; box-shadow: none; }
+    .btn-secondary { background: linear-gradient(135deg, var(--brand-orange) 0%, #FF853D 100%); box-shadow: 0 4px 15px rgba(243, 108, 33, 0.25); margin-top: 30px; }
     .btn-download { background: #94A3B8; margin-bottom: 15px; display: none; box-shadow: none; border-radius: 12px; padding: 12px; font-size: 14px; }
+    
     .btn-group { display: flex; gap: 12px; margin-bottom: 15px; }
     .btn-group .btn { margin-bottom: 0; flex: 1; padding: 14px 5px; font-size: 15px; }
     
-    /* 表單與輸入框優化 */
     .section-title { color: var(--brand-blue); margin: 0 0 20px 0; font-size: 18px; font-weight: 700; border-bottom: 2px solid var(--input-bg); padding-bottom: 12px; }
-    
     label.title-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-top: 15px; display: block; letter-spacing: 0.3px; }
     
-    input[type="text"] { 
-      width: 100%; padding: 15px; margin: 6px 0 10px; 
-      border: 1.5px solid var(--border-color); border-radius: 12px; 
-      box-sizing: border-box; font-size: 16px; font-weight: 500;
-      background-color: var(--input-bg); color: var(--text-main);
-      transition: all 0.2s ease; 
-    }
-    input[type="text"]:focus { 
-      border-color: var(--brand-orange); outline: none; 
-      background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(243, 108, 33, 0.1); 
-    }
+    input[type="text"] { width: 100%; padding: 15px; margin: 6px 0 10px; border: 1.5px solid var(--border-color); border-radius: 12px; box-sizing: border-box; font-size: 16px; font-weight: 500; background-color: var(--input-bg); color: var(--text-main); transition: all 0.2s ease; }
+    input[type="text"]:focus { border-color: var(--brand-orange); outline: none; background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(243, 108, 33, 0.1); }
     
-    /* 高質感原始文字框 (淺色科技風格) */
-    textarea#rawInput { 
-      width: 100%; padding: 18px; margin: 6px 0 10px; box-sizing: border-box; 
-      border-radius: 12px;
-      background-color: #F8FAFC; 
-      color: #334155; 
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 15px; 
-      line-height: 1.7; 
-      overflow-y: hidden; 
-      resize: none; 
-      min-height: 120px;
-      border: 1.5px solid var(--border-color);
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
-    }
+    textarea#rawInput { width: 100%; padding: 18px; margin: 6px 0 10px; box-sizing: border-box; border-radius: 12px; background-color: #F8FAFC; color: #334155; font-family: "SFMono-Regular", Consolas, monospace; font-size: 15px; line-height: 1.7; overflow-y: hidden; resize: none; min-height: 120px; border: 1.5px solid var(--border-color); box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); }
     textarea#rawInput:focus { outline: none; border-color: var(--brand-blue); background-color: #FFFFFF; }
     
     .name-group { display: flex; gap: 12px; }
     .name-group div { flex: 1; }
-    #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    
+    /* 預覽圖加上一點濾鏡感，讓使用者知道這是處理過的圖片 */
+    #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;}
+    .filter-badge { display: none; background: #333; color: #4AF626; font-size: 11px; padding: 4px 8px; border-radius: 6px; width: fit-content; margin: 0 auto 15px auto; font-family: monospace; }
+    
     #status { color: var(--brand-blue); font-weight: 700; text-align: center; margin-bottom: 10px; font-size: 15px; }
     #cameraInput, #uploadInput { display: none; }
     .hint-text { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
@@ -118,14 +61,12 @@
 </head>
 <body>
 
-  <!-- 導入 Logo 與標題 -->
   <div class="header-container">
     <img src="Kai logo.png" alt="KAI Logo" class="header-logo">
     <h2>名片掃描小幫手</h2>
   </div>
 
   <div class="card">
-    <!-- 新增的提示文字區塊 -->
     <div class="dev-note-container">
       <p class="dev-note">✨ 辨識能力持續優化中，請見諒～</p>
       <p class="dev-note-sub">目前只適用繁體中文和英文</p>
@@ -139,6 +80,9 @@
     </div>
     
     <img id="preview" alt="名片預覽圖">
+    <!-- 顯示這張圖已經過 AI 淨化的標籤 -->
+    <div id="filterBadge" class="filter-badge">● AI 影像淨化模式已啟動</div>
+    
     <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
     <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
     
@@ -175,7 +119,6 @@
     <input type="text" id="addressInput" placeholder="請輸入地址">
     
     <label class="title-label" style="color: var(--brand-orange);">📝 原始辨識文字 (100% 完整紀錄)</label>
-    <!-- 高質感淺色文字框 -->
     <textarea id="rawInput"></textarea>
 
     <button id="saveBtn" class="btn btn-secondary">💾 匯入iPhone聯絡人</button>
@@ -185,6 +128,7 @@
     const cameraInput = document.getElementById('cameraInput');
     const uploadInput = document.getElementById('uploadInput');
     const preview = document.getElementById('preview');
+    const filterBadge = document.getElementById('filterBadge');
     const statusDiv = document.getElementById('status');
     const formCard = document.getElementById('formCard');
     const saveImgBtn = document.getElementById('saveImgBtn');
@@ -206,145 +150,204 @@
 
     let currentImageUrl = ''; 
 
-    async function processImage(e) {
+    // 【新增】強大影像前處理引擎 (Canvas Image Processing)
+    function enhanceImage(imgElement) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // 限制最大寬度，避免 4K 照片導致網頁崩潰，同時加快 AI 辨識速度
+      const MAX_WIDTH = 1200;
+      let width = imgElement.width;
+      let height = imgElement.height;
+
+      if (width > MAX_WIDTH) {
+        height = Math.round((height * MAX_WIDTH) / width);
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(imgElement, 0, 0, width, height);
+
+      // 提取像素資料進行底層修改
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      // 設定超高對比度參數 (0~255，數值越大邊緣越銳利)
+      const contrast = 120; 
+      const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+      for (let i = 0; i < data.length; i += 4) {
+        // 1. 轉為灰階 (使用人眼感光公式)
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // 2. 套用高對比，把陰影推向純白，文字推向純黑
+        gray = factor * (gray - 128) + 128;
+
+        // 避免數值破表
+        if (gray > 255) gray = 255;
+        if (gray < 0) gray = 0;
+
+        // 將修改後的灰階值寫回紅綠藍通道
+        data[i] = gray;     
+        data[i + 1] = gray; 
+        data[i + 2] = gray; 
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      // 回傳優化後的圖片資料網址 (JPEG 格式，品質 0.9)
+      return canvas.toDataURL('image/jpeg', 0.9);
+    }
+
+    async function handleFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      currentImageUrl = URL.createObjectURL(file);
-      preview.src = currentImageUrl;
-      preview.style.display = 'block';
-      saveImgBtn.style.display = 'block';
-      imageHint.style.display = 'block';
+      statusDiv.innerText = "🛠️ 正在進行影像淨化與對比強化...";
       formCard.style.display = 'none';
-      statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
 
-      try {
-        const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+      // 讀取圖片並進行前處理
+      const img = new Image();
+      img.onload = async function() {
+        // 取得黑白高對比的圖片
+        const processedDataUrl = enhanceImage(img);
         
-        // 移除強制打亂排版的參數，讓 AI 回歸最自然的閱讀順序，以確保文字最完整
-        const { data: { text } } = await worker.recognize(file);
-        
-        // 【100% 原始呈現】：完全不修改，直接放入畫面中
-        rawInput.value = text;
-        rawInput.style.height = 'auto'; 
-        rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; 
-        
-        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        
-        let foundCompany = '';
-        let foundCname = '';
-        let foundEfname = '';
-        let foundElname = '';
-        let foundAddress = '';
-        let cNameLineIndex = -1; 
-        
-        for (let i = 0; i < rawLines.length; i++) {
-          let line = rawLines[i];
-          let noSpaceLine = line.replace(/\s+/g, ''); 
+        // 將預覽圖替換為「處理過」的圖片，讓使用者知道我們做了魔法
+        currentImageUrl = processedDataUrl;
+        preview.src = currentImageUrl;
+        preview.style.display = 'block';
+        filterBadge.style.display = 'block';
+        saveImgBtn.style.display = 'block';
+        imageHint.style.display = 'block';
+
+        statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
+
+        try {
+          // 將「處理過的圖片」餵給 Tesseract AI，取代原本的生圖
+          const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+          const { data: { text } } = await worker.recognize(processedDataUrl);
           
-          if (!foundCompany && noSpaceLine.includes('公司')) {
-            foundCompany = noSpaceLine;
-          }
+          rawInput.value = text;
+          rawInput.style.height = 'auto'; 
+          rawInput.style.height = (rawInput.scrollHeight + 10) + 'px'; 
+          
+          const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+          
+          let foundCompany = '';
+          let foundCname = '';
+          let foundEfname = '';
+          let foundElname = '';
+          let foundAddress = '';
+          let cNameLineIndex = -1; 
+          
+          for (let i = 0; i < rawLines.length; i++) {
+            let line = rawLines[i];
+            let noSpaceLine = line.replace(/\s+/g, ''); 
+            
+            if (!foundCompany && noSpaceLine.includes('公司')) {
+              foundCompany = noSpaceLine;
+            }
 
-          if (!foundCname) {
-            let tempLine = noSpaceLine;
-            jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
-            let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
-            if (cMatches) {
-              for (let match of cMatches) {
-                if (twSurnames.includes(match[0])) {
-                  foundCname = match;
-                  cNameLineIndex = i; 
-                  break;
+            if (!foundCname) {
+              let tempLine = noSpaceLine;
+              jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
+              let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
+              if (cMatches) {
+                for (let match of cMatches) {
+                  if (twSurnames.includes(match[0])) {
+                    foundCname = match;
+                    cNameLineIndex = i; 
+                    break;
+                  }
                 }
+              }
+            }
+
+            if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
+              let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
+              if (addrMatch) {
+                foundAddress = addrMatch[0];
               }
             }
           }
 
-          if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
-            let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
-            if (addrMatch) {
-              foundAddress = addrMatch[0];
-            }
-          }
-        }
+          let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
+          let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
 
-        let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
-        let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
-
-        for (let i = searchStart; i <= searchEnd; i++) {
-          let line = rawLines[i];
-          if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
-            let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
-            if (engMatches) {
-              for (let match of engMatches) {
-                let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
-                if (words.length >= 2) {
-                  let surnameFound = false;
-                  for (let j = 0; j < words.length; j++) {
-                    if (enSurnames.includes(words[j].toUpperCase())) {
-                      foundElname = words[j]; 
-                      words.splice(j, 1);
-                      foundEfname = words.join(' '); 
-                      surnameFound = true;
-                      break;
+          for (let i = searchStart; i <= searchEnd; i++) {
+            let line = rawLines[i];
+            if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
+              let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
+              if (engMatches) {
+                for (let match of engMatches) {
+                  let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
+                  if (words.length >= 2) {
+                    let surnameFound = false;
+                    for (let j = 0; j < words.length; j++) {
+                      if (enSurnames.includes(words[j].toUpperCase())) {
+                        foundElname = words[j]; 
+                        words.splice(j, 1);
+                        foundEfname = words.join(' '); 
+                        surnameFound = true;
+                        break;
+                      }
+                    }
+                    if (!surnameFound && words.length === 2 && !foundElname) {
+                      foundEfname = words[0]; 
+                      foundElname = words[1]; 
                     }
                   }
-                  if (!surnameFound && words.length === 2 && !foundElname) {
-                    foundEfname = words[0]; 
-                    foundElname = words[1]; 
-                  }
+                  if (foundElname || foundEfname) break;
                 }
-                if (foundElname || foundEfname) break;
               }
             }
+            if (foundElname || foundEfname) break;
           }
-          if (foundElname || foundEfname) break;
-        }
 
-        // 【手機與 Email 抓取能力大強化】
-        // 建立一個專門給手機/Email比對用的「淨化版」字串 (去除所有空白，並將大寫 O 替換成數字 0)
-        const pureTextForRegex = text.replace(/\s+/g, '').replace(/[Oo]/g, '0');
-        
-        // 找尋 09 開頭或 886 開頭的連續數字
-        const phoneRegex = /(?:09\d{8}|8869\d{8}|\+8869\d{8})/g;
-        const foundPhones = pureTextForRegex.match(phoneRegex);
-        let finalPhone = '';
-        if (foundPhones) {
-          // 如果是 886 開頭但沒加加號，幫忙補上
-          finalPhone = foundPhones[0].startsWith('886') ? '+' + foundPhones[0] : foundPhones[0];
-        }
-        
-        // Email 抓取 (先嘗試在原始文字中抓取，若失敗再從無空白的文字中抓)
-        const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-        let foundEmails = text.match(emailRegex);
-        if (!foundEmails) {
-          foundEmails = pureTextForRegex.match(emailRegex); // 救援模式：強制忽略字母間的奇怪空白
-        }
+          const pureTextForRegex = text.replace(/\s+/g, '').replace(/[Oo]/g, '0');
+          const phoneRegex = /(?:09\d{8}|8869\d{8}|\+8869\d{8})/g;
+          const foundPhones = pureTextForRegex.match(phoneRegex);
+          let finalPhone = '';
+          if (foundPhones) {
+            finalPhone = foundPhones[0].startsWith('886') ? '+' + foundPhones[0] : foundPhones[0];
+          }
+          
+          const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+          let foundEmails = text.match(emailRegex);
+          if (!foundEmails) {
+            foundEmails = pureTextForRegex.match(emailRegex); 
+          }
 
-        companyInput.value = foundCompany;
-        cnameInput.value = foundCname;
-        efnameInput.value = foundEfname;
-        elnameInput.value = foundElname;
-        mobileInput.value = finalPhone;
-        emailInput.value = foundEmails ? foundEmails[0] : '';
-        addressInput.value = foundAddress;
+          companyInput.value = foundCompany;
+          cnameInput.value = foundCname;
+          efnameInput.value = foundEfname;
+          elnameInput.value = foundElname;
+          mobileInput.value = finalPhone;
+          emailInput.value = foundEmails ? foundEmails[0] : '';
+          addressInput.value = foundAddress;
 
-        statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
-        formCard.style.display = 'block';
-        
-        await worker.terminate();
-      } catch (error) {
-        statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
-        console.error(error);
-      } finally {
-        cameraInput.value = '';
-        uploadInput.value = '';
-      }
+          statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
+          formCard.style.display = 'block';
+          
+          await worker.terminate();
+        } catch (error) {
+          statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
+          console.error(error);
+        } finally {
+          cameraInput.value = '';
+          uploadInput.value = '';
+        }
+      };
+      
+      // 將使用者上傳的檔案轉換為圖片網址，觸發 onload 進行處理
+      img.src = URL.createObjectURL(file);
     }
 
-    cameraInput.addEventListener('change', processImage);
-    uploadInput.addEventListener('change', processImage);
+    cameraInput.addEventListener('change', handleFileSelect);
+    uploadInput.addEventListener('change', handleFileSelect);
 
     saveImgBtn.addEventListener('click', function() {
       if (!currentImageUrl) return;
