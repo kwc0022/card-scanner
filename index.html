@@ -351,7 +351,7 @@
       document.body.removeChild(link);
     });
 
-    // 匯入聯絡人邏輯更新
+    // --- 核心修正：完美清理與轉義備註文字，確保 iOS 不會報錯 ---
     saveBtn.addEventListener('click', async function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
@@ -368,8 +368,13 @@
       if (ename) fullName += fullName ? ` (${ename})` : ename;
       if (!fullName) fullName = '未知聯絡人';
 
-      // 【核心更新】將原始文字的換行符號取代為 vCard 規定的格式 \n
-      const formattedNote = rawText.replace(/\n/g, '\\n');
+      // 針對 iOS vCard 格式進行嚴格轉義：
+      // 1. 將所有隱藏的換行符號 (\r\n 或 \r 或 \n) 替換為 vCard 標準的字面 \n
+      // 2. 將分號 (;) 與 逗號 (,) 加上反斜線轉義，避免被 iOS 誤認為欄位分隔符號
+      let formattedNote = rawText
+        .replace(/\r\n|\r|\n/g, '\\n')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,');
 
       const vcardData = `BEGIN:VCARD
 VERSION:3.0
