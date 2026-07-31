@@ -11,7 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="名片拍立存">
   <link rel="apple-touch-icon" href="Kai logo.png">
 
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <!-- 引入科幻英文字體與極黑級別 (wght@900) 的中文思源黑體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   
   <style>
@@ -33,21 +34,64 @@
       padding: 20px; max-width: 550px; margin: 0 auto; 
       background: radial-gradient(circle at top center, #1b1633 0%, var(--bg-dark) 100%);
       color: var(--text-main); min-height: 100vh;
-      /* 避免 PWA 模式下的橡皮筋捲動效果 */
       overscroll-behavior-y: none;
     }
 
-    /* 頂部標題與狀態列安全距離 (針對有瀏海的 iPhone) */
     .header-container { 
       display: flex; align-items: center; justify-content: center; 
       margin-bottom: 25px; margin-top: env(safe-area-inset-top, 20px); 
     }
     
-    h2 { 
-      margin: 0; font-family: 'Orbitron', sans-serif; font-weight: 900; 
-      letter-spacing: 2px; font-size: 2em; 
-      color: var(--neon-cyan);
-      text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+    /* -------------------------------------------
+       全新霸氣 Logo 設計
+       ------------------------------------------- */
+    h2.site-logo { 
+      margin: 0; 
+      font-family: 'Noto Sans TC', sans-serif; 
+      font-weight: 900; /* 極黑字體份量 */
+      font-size: 2.6em; /* 放大視覺佔比 */
+      letter-spacing: 2px; 
+      line-height: 1.1;
+      
+      /* 金屬感漸層遮罩 */
+      background: linear-gradient(to bottom, #ffffff 0%, #a4fcff 45%, var(--neon-cyan) 55%, #006873 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      
+      /* 俐落的發光外框 */
+      -webkit-text-stroke: 1.5px rgba(0, 229, 255, 0.6);
+      
+      /* 多層次立體陰影 (需使用 drop-shadow 配合 background-clip) */
+      filter: drop-shadow(0px 0px 12px rgba(0, 229, 255, 0.5)) drop-shadow(0px 5px 5px rgba(0, 0, 0, 0.8));
+      position: relative;
+      display: inline-block;
+    }
+
+    /* 科技感點綴：前綴符號 */
+    h2.site-logo::before {
+      content: '//';
+      font-family: 'Orbitron', sans-serif;
+      color: var(--neon-purple);
+      -webkit-text-fill-color: var(--neon-purple);
+      -webkit-text-stroke: 0;
+      font-size: 0.6em;
+      margin-right: 8px;
+      vertical-align: middle;
+      text-shadow: 0 0 10px var(--neon-purple);
+    }
+
+    /* 科技感點綴：後綴迷你徽章 */
+    h2.site-logo::after {
+      content: 'OS';
+      font-family: 'Orbitron', sans-serif;
+      color: var(--neon-purple);
+      -webkit-text-fill-color: var(--neon-purple);
+      -webkit-text-stroke: 0;
+      font-size: 0.35em;
+      margin-left: 6px;
+      vertical-align: super;
+      text-shadow: 0 0 10px var(--neon-purple);
+      letter-spacing: 1px;
     }
     
     .card { 
@@ -66,7 +110,6 @@
     .card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
     .card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
 
-    /* 輕微光束動態效果 */
     .glow-box {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       overflow: hidden; pointer-events: none; border-radius: inherit; z-index: 1;
@@ -229,10 +272,10 @@
   </div>
 
   <div class="header-container">
-    <h2>名片拍立存</h2>
+    <!-- 全新霸氣 Logo 排版 -->
+    <h2 class="site-logo">名片拍立存</h2>
   </div>
 
-  <!-- 加入主畫面安裝提示 (僅在 iOS Safari 非全螢幕下顯示) -->
   <div id="pwaHint" class="card" style="display: none; padding: 15px; border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(176, 38, 255, 0.2);">
     <p style="margin: 0; font-size: 14px; text-align: center; color: #fff;">
       <span style="color: var(--neon-purple); font-weight: bold;">⬢ 系統提示：</span>點擊下方分享按鈕 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> 並選擇<strong>「加入主畫面」</strong>，即可享受全螢幕 App 體驗！
@@ -321,21 +364,14 @@
   </div>
 
   <script>
-    // ----------------------------------------------------
-    // PWA (漸進式網頁應用程式) 核心註冊模組
-    // 將網頁動態轉化為可安裝的手機 App
-    // ----------------------------------------------------
     (function initPWA() {
-      // 判斷是否已經在獨立 App 模式 (Standalone) 下執行
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-      // 如果在 iOS 且不是全螢幕模式，提示使用者加入主畫面
       if (isIOS && !isStandalone) {
         document.getElementById('pwaHint').style.display = 'block';
       }
 
-      // 動態生成 Web App Manifest
       const manifest = {
         "name": "名片拍立存",
         "short_name": "拍立存",
@@ -352,7 +388,6 @@
       const manifestUrl = URL.createObjectURL(manifestBlob);
       document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestUrl}">`);
 
-      // 動態生成 Service Worker 以符合 PWA 安裝標準
       const swCode = `
         self.addEventListener('install', (e) => { self.skipWaiting(); });
         self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
@@ -364,7 +399,6 @@
         navigator.serviceWorker.register(swUrl).then(() => console.log('PWA Engine Activated.'));
       }
     })();
-    // ----------------------------------------------------
 
     const startCameraBtn = document.getElementById('startCameraBtn');
     const uploadInput = document.getElementById('uploadInput');
@@ -394,7 +428,6 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
-    // 字典庫
     const twSurnames = ['趙','錢','孫','李','周','吳','鄭','王','馮','陳','褚','衛','蔣','沈','韓','楊','朱','秦','尤','許','何','呂','施','張','孔','曹','嚴','華','金','魏','陶','姜','戚','謝','鄒','喻','柏','水','竇','章','雲','蘇','潘','葛','奚','范','彭','郎','魯','韋','昌','馬','苗','鳳','花','方','俞','任','袁','柳','酆','鮑','史','唐','費','廉','岑','薛','雷','賀','倪','湯','滕','殷','羅','畢','郝','鄔','安','常','樂','于','時','傅','皮','卞','齊','康','伍','余','元','卜','顧','孟','平','黃','和','穆','蕭','尹','姚','邵','湛','汪','祁','毛','禹','狄','米','貝','明','臧','計','伏','成','戴','談','宋','茅','龐','熊','紀','舒','屈','項','祝','董','梁','杜','阮','藍','閔','席','季','麻','強','賈','路','婁','危','江','童','顏','郭','梅','盛','林','刁','鍾','徐','邱','駱','高','夏','蔡','田','樊','胡','凌','霍','虞','萬','支','柯','昝','管','盧','莫','經','房','裘','繆','干','解','應','宗','丁','宣','賁','鄧','郁','單','杭','洪','包','諸','左','石','崔','吉','鈕','龔','程','嵇','邢','滑','裴','陸','榮','翁','荀','羊','於','惠','甄','麴','家','封','芮','羿','儲','靳','汲','邴','糜','松','井','段','富','巫','烏','焦','巴','弓','牧','隗','山','谷','車','侯','宓','蓬','全','郗','班','仰','秋','仲','伊','宮','寧','仇','欒','暴','甘','鈄','厲','戎','祖','武','符','劉','景','詹','束','龍','葉','幸','司','韶','郜','黎','薊','薄','印','宿','白','懷','蒲','邰','從','鄂','索','咸','籍','賴','卓','藺','屠','蒙','池','喬','陰','鬱','胥','能','蒼','雙','聞','莘','黨','翟','譚','貢','勞','逄','姬','申','扶','堵','冉','宰','酈','雍','卻','璩','桑','桂','濮','牛','壽','通','邊','扈','燕','冀','郟','浦','尚','農','溫','別','莊','晏','柴','瞿','閻','充','慕','連','茹','習','宦','艾','魚','容','向','古','易','慎','戈','廖','庾','終','暨','居','衡','步','都','耿','滿','弘','匡','國','文','寇','廣','祿','闕','東','歐','殳','沃','利','蔚','越','夔','隆','師','鞏','厍','聶','晁','勾','敖','融','冷','訾','辛','闞','那','簡','饒','空','曾','毋','沙','乜','養','鞠','須','豐','巢','關','蒯','相','查','后','荊','紅','遊','竺','權','逯','蓋','益','桓','公','歐陽','太史','端木','上官','司馬','東方','獨孤','南宮','萬俟','聞人','夏侯','諸葛','尉遲','公羊','赫連','澹臺','皇甫','宗政','濮陽','公冶','太叔','申屠','公孫','慕容','仲孫','鍾離','長孫','宇文','司徒','鮮于','司空','閭丘','子車','亓官','司寇','巫馬','公西','顓孫','壤駟','公良','漆雕','樂正','宰父','穀梁','拓跋','夾谷','軒轅','令狐','段干','百里','呼延','東郭','南門','羊舌','微生','公戶','公玉','公儀','梁丘','公仲','公叔','公伯','朝','宗','鄶','鄺'];
     const enSurnames = ['CHEN','LIN','HUANG','CHANG','LEE','WANG','WU','LIU','TSAI','YANG','HSU','CHENG','HSIEH','HUNG','KUO','CHIU','TSENG','LIAO','LAI','CHOU','PAN','SU','YEH','CHUANG','LU','CHIANG','HO','HSIAO','LO','KAO','CHIEN','SHIH','CHUNG','PENG','SHEN','YEN','TSAO','WEI','CHIN','YU','MA','SUN','TING','FENG','WEN','TU','YANG','CHOU','WU','CHENG','CHANG','CHU'];
     const enFirstNames = ['JOHN','DAVID','MARY','ALICE','MICHAEL','JAMES','ROBERT','WILLIAM','RICHARD','THOMAS','CHARLES','DANIEL','MATTHEW','ANTHONY','MARK','PAUL','STEVEN','ANDREW','KENNETH','JOSHUA','KEVIN','BRIAN','GEORGE','EDWARD','RONALD','TIMOTHY','JASON','JEFFREY','RYAN','JACOB','GARY','NICHOLAS','ERIC','JONATHAN','STEPHEN','LARRY','JUSTIN','SCOTT','BRANDON','BENJAMIN','SAMUEL','GREGORY','ALEXANDER','FRANK','PATRICK','RAYMOND','JACK','DENNIS','JERRY','TYLER','AARON','JOSE','ADAM','NATHAN','HENRY','DOUGLAS','ZACHARY','PETER','KYLE','WALTER','ETHAN','JEREMY','CHRISTIAN','KEITH','ROGER','TERRY','GERALD','SEAN','ARTHUR','LAWRENCE','DYLAN','JESSE','WILLIE','BRYAN','RALPH','ROY','EUGENE','WAYNE','ALAN','JUAN','LOUIS','EUGENE','RUSSELL','PETE'];
