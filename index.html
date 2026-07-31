@@ -43,14 +43,16 @@
     }
     
     /* -------------------------------------------
-       圖片 Logo 樣式設計
+       圖片 Logo 樣式設計 (融合魔法在這裡)
        ------------------------------------------- */
     .main-logo-img {
       width: 100%;
       max-width: 320px;
       height: auto;
       display: block;
-      /* 加上輕微的霓虹光暈讓圖片更融入背景 */
+      /* 🔥 神奇魔法：濾掉圖片的深色背景，只保留發亮元素，完美融合網頁 🔥 */
+      mix-blend-mode: screen; 
+      /* 加上輕微的霓虹光暈 */
       filter: drop-shadow(0 4px 15px rgba(0, 229, 255, 0.15));
     }
     
@@ -80,7 +82,7 @@
       opacity: 0.7;
     }
     .glow-line-y {
-      position: absolute; width: 2px; height: 100%;
+      position: absolute width: 2px; height: 100%;
       background: linear-gradient(180deg, transparent, var(--neon-purple), transparent);
       opacity: 0.7;
     }
