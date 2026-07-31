@@ -6,7 +6,6 @@
   <title>名片掃描小幫手</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    /* 高質感現代科技主題色 */
     :root {
       --brand-blue: #232773;
       --brand-orange: #F36C21;
@@ -55,9 +54,13 @@
     #uploadInput { display: none; }
     .hint-text { font-size: 12.5px; color: var(--text-light); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
 
-    /* WebRTC 掃描器介面專屬 CSS */
+    /* -------------------------------------------
+       WebRTC 掃描器介面專屬 CSS (已針對 iOS 修正)
+       ------------------------------------------- */
     #scannerContainer {
-      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; 
+      /* 使用 100dvh 解決 iPhone Safari 網址列遮擋問題 */
+      height: 100vh; height: 100dvh; 
       background: #000; z-index: 9999;
     }
     #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
@@ -65,19 +68,17 @@
     .scanner-overlay {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden; pointer-events: none;
+      overflow: hidden; pointer-events: none; z-index: 10000;
     }
     
-    /* 利用超大陰影創造四周半透明黑幕，中間挖空的效果 */
     .scanner-box {
-      width: 85%; aspect-ratio: 1.6 / 1; /* 名片大約的長寬比 */
+      width: 85%; aspect-ratio: 1.6 / 1; 
       border: 3px solid var(--brand-orange);
       border-radius: 12px;
       box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.65);
       position: relative;
     }
     
-    /* 掃描雷射光條動畫 */
     .scanner-box::after {
       content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
       background: var(--brand-orange); box-shadow: 0 0 10px var(--brand-orange);
@@ -89,27 +90,44 @@
       100% { top: 0; }
     }
     
+    /* 大幅提升按鈕高度，避開 iPhone 底部導覽列 */
     .scanner-controls {
-      position: absolute; bottom: 40px; left: 0; width: 100%;
-      display: flex; justify-content: center; gap: 20px; padding: 0 20px; box-sizing: border-box;
+      position: absolute; 
+      bottom: 80px; /* 拉高位置 */
+      padding-bottom: env(safe-area-inset-bottom); /* 適應 iPhone 下方的橫條 */
+      left: 0; width: 100%;
+      display: flex; justify-content: center; align-items: center; gap: 15px; 
+      padding-left: 20px; padding-right: 20px; box-sizing: border-box;
+      z-index: 10001; /* 確保按鈕在最上層可點擊 */
     }
-    #captureBtn { background: var(--brand-orange); width: 70%; border-radius: 50px; padding: 18px; font-size: 18px; box-shadow: 0 5px 20px rgba(243, 108, 33, 0.4); }
-    #closeScannerBtn { background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); }
+    
+    #captureBtn { 
+      background: var(--brand-orange); width: 70%; border-radius: 50px; 
+      padding: 18px; font-size: 18px; font-weight: 900; 
+      box-shadow: 0 5px 20px rgba(243, 108, 33, 0.6); 
+      border: 3px solid #fff;
+    }
+    #closeScannerBtn { 
+      background: rgba(255,255,255,0.2); color: white; width: 60px; height: 60px; 
+      border-radius: 50%; border: 2px solid white; font-size: 24px; 
+      display: flex; align-items: center; justify-content: center; 
+      cursor: pointer; backdrop-filter: blur(5px); flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 滿版相機掃描器介面 (預設隱藏) -->
+  <!-- 滿版相機掃描器介面 -->
   <div id="scannerContainer">
-    <!-- playsinline 是為了讓 iOS 不會跳出全螢幕播放器 -->
     <video id="cameraVideo" autoplay playsinline muted></video>
     
     <div class="scanner-overlay">
       <div class="scanner-box">
-        <div style="position: absolute; top: -35px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">請將名片對準框線內</div>
+        <div style="position: absolute; top: -35px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 16px;">請將名片對準框線內</div>
       </div>
     </div>
     
+    <!-- 拍照與關閉按鈕區塊 -->
     <div class="scanner-controls">
       <button id="closeScannerBtn">✖</button>
       <button id="captureBtn" class="btn">📸 拍下名片</button>
@@ -128,15 +146,12 @@
     </div>
     
     <div class="btn-group">
-      <!-- 改為觸發自訂相機介面的按鈕 -->
       <button id="startCameraBtn" class="btn">📷 掃描名片</button>
-      
       <label for="uploadInput" class="btn btn-upload">🖼️ 上傳照片</label>
       <input type="file" id="uploadInput" accept="image/*">
     </div>
     
     <img id="preview" alt="名片預覽圖">
-    
     <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
     <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
     
@@ -212,13 +227,10 @@
     let currentImageUrl = ''; 
 
     // --- WebRTC 相機控制邏輯 ---
-    
-    // 1. 開啟相機
     startCameraBtn.addEventListener('click', async () => {
       try {
-        // 請求後置鏡頭
         currentStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' } 
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
         });
         cameraVideo.srcObject = currentStream;
         scannerContainer.style.display = 'block';
@@ -228,7 +240,6 @@
       }
     });
 
-    // 2. 關閉相機
     function stopCamera() {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -237,21 +248,18 @@
     }
     closeScannerBtn.addEventListener('click', stopCamera);
 
-    // 3. 拍照並交給 OCR 處理
     captureBtn.addEventListener('click', () => {
       const canvas = document.createElement('canvas');
       canvas.width = cameraVideo.videoWidth;
       canvas.height = cameraVideo.videoHeight;
       const ctx = canvas.getContext('2d');
       
-      // 將影片目前的畫面畫入 Canvas
       ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高品質圖片
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9); 
       
-      stopCamera(); // 拍完立刻關閉相機節省資源
-      runOCR(dataUrl); // 執行文字辨識
+      stopCamera(); 
+      runOCR(dataUrl); 
     });
-
 
     // --- 檔案上傳控制邏輯 (備用方案) ---
     uploadInput.addEventListener('change', (e) => {
@@ -261,7 +269,6 @@
       const imgUrl = URL.createObjectURL(file);
       runOCR(imgUrl);
     });
-
 
     // --- 核心 OCR 辨識與資料處理引擎 ---
     async function runOCR(imageUrl) {
@@ -388,11 +395,10 @@
         statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
         console.error(error);
       } finally {
-        uploadInput.value = ''; // 清除 input 讓下次選同張圖也能觸發
+        uploadInput.value = ''; 
       }
     }
     
-    // 如果使用者手動修改內容，也自動擴展高度
     rawInput.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = (this.scrollHeight + 10) + 'px';
