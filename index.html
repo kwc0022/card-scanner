@@ -6,7 +6,6 @@
   <title>名片掃描小幫手</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    /* 高質感現代科技主題色 */
     :root {
       --brand-blue: #232773;
       --brand-orange: #F36C21;
@@ -44,15 +43,13 @@
     input[type="text"] { width: 100%; padding: 15px; margin: 6px 0 10px; border: 1.5px solid var(--border-color); border-radius: 12px; box-sizing: border-box; font-size: 16px; font-weight: 500; background-color: var(--input-bg); color: var(--text-main); transition: all 0.2s ease; }
     input[type="text"]:focus { border-color: var(--brand-orange); outline: none; background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(243, 108, 33, 0.1); }
     
-    /* 確保 overflow-y 設為 hidden，透過 JS 撐開高度 */
     textarea#rawInput { width: 100%; padding: 18px; margin: 6px 0 10px; box-sizing: border-box; border-radius: 12px; background-color: #F8FAFC; color: #334155; font-family: "SFMono-Regular", Consolas, monospace; font-size: 15px; line-height: 1.7; overflow-y: hidden; resize: none; min-height: 120px; border: 1.5px solid var(--border-color); box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); }
     textarea#rawInput:focus { outline: none; border-color: var(--brand-blue); background-color: #FFFFFF; }
     
     .name-group { display: flex; gap: 12px; }
     .name-group div { flex: 1; }
     
-    #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;}
-    .filter-badge { display: none; background: #333; color: #4AF626; font-size: 11px; padding: 4px 8px; border-radius: 6px; width: fit-content; margin: 0 auto 15px auto; font-family: monospace; }
+    #preview { max-width: 100%; border-radius: 14px; display: none; margin-bottom: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;}
     
     #status { color: var(--brand-blue); font-weight: 700; text-align: center; margin-bottom: 10px; font-size: 15px; }
     #cameraInput, #uploadInput { display: none; }
@@ -80,7 +77,6 @@
     </div>
     
     <img id="preview" alt="名片預覽圖">
-    <div id="filterBadge" class="filter-badge">● AI 影像淨化模式已啟動</div>
     
     <div id="imageHint" class="hint-text">💡 提示：手機長按上方照片即可「儲存到照片」</div>
     <button id="saveImgBtn" class="btn btn-download">📥 備份下載照片 (至檔案)</button>
@@ -127,7 +123,6 @@
     const cameraInput = document.getElementById('cameraInput');
     const uploadInput = document.getElementById('uploadInput');
     const preview = document.getElementById('preview');
-    const filterBadge = document.getElementById('filterBadge');
     const statusDiv = document.getElementById('status');
     const formCard = document.getElementById('formCard');
     const saveImgBtn = document.getElementById('saveImgBtn');
@@ -149,189 +144,140 @@
 
     let currentImageUrl = ''; 
 
-    // 影像前處理引擎
-    function enhanceImage(imgElement) {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      const MAX_WIDTH = 1200;
-      let width = imgElement.width;
-      let height = imgElement.height;
-
-      if (width > MAX_WIDTH) {
-        height = Math.round((height * MAX_WIDTH) / width);
-        width = MAX_WIDTH;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(imgElement, 0, 0, width, height);
-
-      const imageData = ctx.getImageData(0, 0, width, height);
-      const data = imageData.data;
-
-      const contrast = 120; 
-      const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        gray = factor * (gray - 128) + 128;
-
-        if (gray > 255) gray = 255;
-        if (gray < 0) gray = 0;
-
-        data[i] = gray;     
-        data[i + 1] = gray; 
-        data[i + 2] = gray; 
-      }
-      
-      ctx.putImageData(imageData, 0, 0);
-      return canvas.toDataURL('image/jpeg', 0.9);
-    }
-
     async function handleFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      statusDiv.innerText = "🛠️ 正在進行影像淨化與對比強化...";
-      formCard.style.display = 'none';
-
-      const img = new Image();
-      img.onload = async function() {
-        const processedDataUrl = enhanceImage(img);
-        
-        currentImageUrl = processedDataUrl;
-        preview.src = currentImageUrl;
-        preview.style.display = 'block';
-        filterBadge.style.display = 'block';
-        saveImgBtn.style.display = 'block';
-        imageHint.style.display = 'block';
-
-        statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
-
-        try {
-          const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-          const { data: { text } } = await worker.recognize(processedDataUrl);
-          
-          rawInput.value = text;
-          
-          const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-          
-          let foundCompany = '';
-          let foundCname = '';
-          let foundEfname = '';
-          let foundElname = '';
-          let foundAddress = '';
-          let cNameLineIndex = -1; 
-          
-          for (let i = 0; i < rawLines.length; i++) {
-            let line = rawLines[i];
-            let noSpaceLine = line.replace(/\s+/g, ''); 
-            
-            if (!foundCompany && noSpaceLine.includes('公司')) {
-              foundCompany = noSpaceLine;
-            }
-
-            if (!foundCname) {
-              let tempLine = noSpaceLine;
-              jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
-              let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
-              if (cMatches) {
-                for (let match of cMatches) {
-                  if (twSurnames.includes(match[0])) {
-                    foundCname = match;
-                    cNameLineIndex = i; 
-                    break;
-                  }
-                }
-              }
-            }
-
-            if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
-              let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
-              if (addrMatch) {
-                foundAddress = addrMatch[0];
-              }
-            }
-          }
-
-          let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
-          let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
-
-          for (let i = searchStart; i <= searchEnd; i++) {
-            let line = rawLines[i];
-            if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
-              let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
-              if (engMatches) {
-                for (let match of engMatches) {
-                  let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
-                  if (words.length >= 2) {
-                    let surnameFound = false;
-                    for (let j = 0; j < words.length; j++) {
-                      if (enSurnames.includes(words[j].toUpperCase())) {
-                        foundElname = words[j]; 
-                        words.splice(j, 1);
-                        foundEfname = words.join(' '); 
-                        surnameFound = true;
-                        break;
-                      }
-                    }
-                    if (!surnameFound && words.length === 2 && !foundElname) {
-                      foundEfname = words[0]; 
-                      foundElname = words[1]; 
-                    }
-                  }
-                  if (foundElname || foundEfname) break;
-                }
-              }
-            }
-            if (foundElname || foundEfname) break;
-          }
-
-          const pureTextForRegex = text.replace(/\s+/g, '').replace(/[Oo]/g, '0');
-          const phoneRegex = /(?:09\d{8}|8869\d{8}|\+8869\d{8})/g;
-          const foundPhones = pureTextForRegex.match(phoneRegex);
-          let finalPhone = '';
-          if (foundPhones) {
-            finalPhone = foundPhones[0].startsWith('886') ? '+' + foundPhones[0] : foundPhones[0];
-          }
-          
-          const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-          let foundEmails = text.match(emailRegex);
-          if (!foundEmails) {
-            foundEmails = pureTextForRegex.match(emailRegex); 
-          }
-
-          companyInput.value = foundCompany;
-          cnameInput.value = foundCname;
-          efnameInput.value = foundEfname;
-          elnameInput.value = foundElname;
-          mobileInput.value = finalPhone;
-          emailInput.value = foundEmails ? foundEmails[0] : '';
-          addressInput.value = foundAddress;
-
-          // 核心修復：先讓整個表單區塊顯示出來 (display: block)，瀏覽器才能正確計算高度
-          statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
-          formCard.style.display = 'block';
-          
-          // 此時再調整高度，就能完美撐開
-          rawInput.style.height = 'auto'; 
-          rawInput.style.height = (rawInput.scrollHeight + 5) + 'px'; 
-          
-          await worker.terminate();
-        } catch (error) {
-          statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
-          console.error(error);
-        } finally {
-          cameraInput.value = '';
-          uploadInput.value = '';
-        }
-      };
+      // 移除干擾的影像處理，直接還原為最高畫質原圖
+      currentImageUrl = URL.createObjectURL(file);
+      preview.src = currentImageUrl;
       
-      img.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      saveImgBtn.style.display = 'block';
+      imageHint.style.display = 'block';
+      formCard.style.display = 'none';
+      statusDiv.innerText = "⏳ 智能掃描中，請稍候...";
+
+      try {
+        // 直接將原汁原味的圖片交給 Tesseract 進行辨識
+        const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+        const { data: { text } } = await worker.recognize(file);
+        
+        rawInput.value = text;
+        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        let foundCompany = '';
+        let foundCname = '';
+        let foundEfname = '';
+        let foundElname = '';
+        let foundAddress = '';
+        let cNameLineIndex = -1; 
+        
+        for (let i = 0; i < rawLines.length; i++) {
+          let line = rawLines[i];
+          let noSpaceLine = line.replace(/\s+/g, ''); 
+          
+          if (!foundCompany && noSpaceLine.includes('公司')) {
+            foundCompany = noSpaceLine;
+          }
+
+          if (!foundCname) {
+            let tempLine = noSpaceLine;
+            jobTitles.forEach(title => { tempLine = tempLine.replace(title, ''); });
+            let cMatches = tempLine.match(/[\u4e00-\u9fa5]{2,4}/g);
+            if (cMatches) {
+              for (let match of cMatches) {
+                if (twSurnames.includes(match[0])) {
+                  foundCname = match;
+                  cNameLineIndex = i; 
+                  break;
+                }
+              }
+            }
+          }
+
+          if (!foundAddress && (line.includes('市') || line.includes('縣')) && (line.includes('區') || line.includes('路') || line.includes('街'))) {
+            let addrMatch = noSpaceLine.match(/[\u4e00-\u9fa5]+[縣市][\u4e00-\u9fa5]+[區鄉鎮市][\u4e00-\u9fa50-9]+[路街段巷弄號樓]/);
+            if (addrMatch) {
+              foundAddress = addrMatch[0];
+            }
+          }
+        }
+
+        let searchStart = cNameLineIndex !== -1 ? cNameLineIndex : 0;
+        let searchEnd = cNameLineIndex !== -1 ? Math.min(rawLines.length - 1, cNameLineIndex + 2) : rawLines.length - 1;
+
+        for (let i = searchStart; i <= searchEnd; i++) {
+          let line = rawLines[i];
+          if (!foundElname && !line.includes('@') && !line.toLowerCase().includes('www')) {
+            let engMatches = line.match(/[A-Za-z][A-Za-z\s\,]+[A-Za-z]/g);
+            if (engMatches) {
+              for (let match of engMatches) {
+                let words = match.trim().replace(/\s+/g, ' ').split(/[\s\,]+/);
+                if (words.length >= 2) {
+                  let surnameFound = false;
+                  for (let j = 0; j < words.length; j++) {
+                    if (enSurnames.includes(words[j].toUpperCase())) {
+                      foundElname = words[j]; 
+                      words.splice(j, 1);
+                      foundEfname = words.join(' '); 
+                      surnameFound = true;
+                      break;
+                    }
+                  }
+                  if (!surnameFound && words.length === 2 && !foundElname) {
+                    foundEfname = words[0]; 
+                    foundElname = words[1]; 
+                  }
+                }
+                if (foundElname || foundEfname) break;
+              }
+            }
+          }
+          if (foundElname || foundEfname) break;
+        }
+
+        const pureTextForRegex = text.replace(/\s+/g, '').replace(/[Oo]/g, '0');
+        const phoneRegex = /(?:09\d{8}|8869\d{8}|\+8869\d{8})/g;
+        const foundPhones = pureTextForRegex.match(phoneRegex);
+        let finalPhone = '';
+        if (foundPhones) {
+          finalPhone = foundPhones[0].startsWith('886') ? '+' + foundPhones[0] : foundPhones[0];
+        }
+        
+        const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+        let foundEmails = text.match(emailRegex);
+        if (!foundEmails) {
+          foundEmails = pureTextForRegex.match(emailRegex); 
+        }
+
+        companyInput.value = foundCompany;
+        cnameInput.value = foundCname;
+        efnameInput.value = foundEfname;
+        elnameInput.value = foundElname;
+        mobileInput.value = finalPhone;
+        emailInput.value = foundEmails ? foundEmails[0] : '';
+        addressInput.value = foundAddress;
+
+        statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
+        
+        // 【核心修正】：先將卡片顯示出來
+        formCard.style.display = 'block';
+        
+        // 使用 setTimeout 延遲 0.1 秒，確保瀏覽器已經把文字畫到畫面上，再精準計算高度
+        setTimeout(function() {
+          rawInput.style.height = 'auto'; 
+          rawInput.style.height = (rawInput.scrollHeight + 10) + 'px';
+        }, 100);
+        
+        await worker.terminate();
+      } catch (error) {
+        statusDiv.innerText = "❌ 辨識失敗，請確認圖片是否清晰。";
+        console.error(error);
+      } finally {
+        cameraInput.value = '';
+        uploadInput.value = '';
+      }
     }
 
     cameraInput.addEventListener('change', handleFileSelect);
@@ -340,7 +286,7 @@
     // 如果使用者手動修改內容，也自動擴展高度
     rawInput.addEventListener('input', function() {
       this.style.height = 'auto';
-      this.style.height = (this.scrollHeight + 5) + 'px';
+      this.style.height = (this.scrollHeight + 10) + 'px';
     });
 
     saveImgBtn.addEventListener('click', function() {
