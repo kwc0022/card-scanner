@@ -2,10 +2,18 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>名片拍力存</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>名片拍立存</title>
+  
+  <!-- iOS PWA 原生應用程式標籤 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="名片拍立存">
+  <link rel="apple-touch-icon" href="Kai logo.png">
+
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  
   <style>
     /* -------------------------------------------
        未來科技 HUD 視覺主題 (Cyberpunk / Sci-Fi)
@@ -25,9 +33,15 @@
       padding: 20px; max-width: 550px; margin: 0 auto; 
       background: radial-gradient(circle at top center, #1b1633 0%, var(--bg-dark) 100%);
       color: var(--text-main); min-height: 100vh;
+      /* 避免 PWA 模式下的橡皮筋捲動效果 */
+      overscroll-behavior-y: none;
     }
 
-    .header-container { display: flex; align-items: center; justify-content: center; margin-bottom: 25px; margin-top: 10px; }
+    /* 頂部標題與狀態列安全距離 (針對有瀏海的 iPhone) */
+    .header-container { 
+      display: flex; align-items: center; justify-content: center; 
+      margin-bottom: 25px; margin-top: env(safe-area-inset-top, 20px); 
+    }
     
     h2 { 
       margin: 0; font-family: 'Orbitron', sans-serif; font-weight: 900; 
@@ -178,34 +192,14 @@
     
     .hud-text { position: absolute; top: -40px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 14px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
 
-    /* -------------------------------------------
-       頁尾版權與職人精品風格區塊
-       ------------------------------------------- */
+    /* 頁尾版權與職人精品風格區塊 */
     .footer-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin-top: 35px;
-      margin-bottom: 25px;
-      gap: 10px;
-    }
-    .footer-logo {
-      height: 1.5em;
-      object-fit: contain;
-      opacity: 0.7;
-      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.3));
-      transition: all 0.3s ease;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin-top: 35px; margin-bottom: 25px; padding-bottom: env(safe-area-inset-bottom, 20px);
     }
     .footer-text {
-      color: var(--neon-cyan);
-      opacity: 0.5;
-      font-family: 'Rajdhani', sans-serif;
-      font-weight: 500;
-      font-size: 13px;
-      letter-spacing: 3px;
-      margin: 0;
-      text-transform: uppercase;
+      color: var(--neon-cyan); opacity: 0.5; font-family: 'Rajdhani', sans-serif;
+      font-weight: 500; font-size: 13px; letter-spacing: 3px; margin: 0; text-transform: uppercase;
     }
   </style>
 </head>
@@ -235,7 +229,14 @@
   </div>
 
   <div class="header-container">
-    <h2>名片拍力存</h2>
+    <h2>名片拍立存</h2>
+  </div>
+
+  <!-- 加入主畫面安裝提示 (僅在 iOS Safari 非全螢幕下顯示) -->
+  <div id="pwaHint" class="card" style="display: none; padding: 15px; border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(176, 38, 255, 0.2);">
+    <p style="margin: 0; font-size: 14px; text-align: center; color: #fff;">
+      <span style="color: var(--neon-purple); font-weight: bold;">⬢ 系統提示：</span>點擊下方分享按鈕 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> 並選擇<strong>「加入主畫面」</strong>，即可享受全螢幕 App 體驗！
+    </p>
   </div>
 
   <div class="card">
@@ -315,13 +316,56 @@
     <button id="saveBtn" class="btn btn-secondary">⬢ 匯入iPhone聯絡人</button>
   </div>
 
-  <!-- 精品職人風頁尾區塊 -->
   <div class="footer-container">
-    <img src="Kai logo.png" alt="KAI Logo" class="footer-logo">
     <p class="footer-text">CRAFTED BY KAI</p>
   </div>
 
   <script>
+    // ----------------------------------------------------
+    // PWA (漸進式網頁應用程式) 核心註冊模組
+    // 將網頁動態轉化為可安裝的手機 App
+    // ----------------------------------------------------
+    (function initPWA() {
+      // 判斷是否已經在獨立 App 模式 (Standalone) 下執行
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+      // 如果在 iOS 且不是全螢幕模式，提示使用者加入主畫面
+      if (isIOS && !isStandalone) {
+        document.getElementById('pwaHint').style.display = 'block';
+      }
+
+      // 動態生成 Web App Manifest
+      const manifest = {
+        "name": "名片拍立存",
+        "short_name": "拍立存",
+        "display": "standalone",
+        "background_color": "#090a0f",
+        "theme_color": "#00e5ff",
+        "icons": [{
+          "src": "Kai logo.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestUrl}">`);
+
+      // 動態生成 Service Worker 以符合 PWA 安裝標準
+      const swCode = `
+        self.addEventListener('install', (e) => { self.skipWaiting(); });
+        self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+        self.addEventListener('fetch', (e) => { });
+      `;
+      const swBlob = new Blob([swCode], {type: 'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register(swUrl).then(() => console.log('PWA Engine Activated.'));
+      }
+    })();
+    // ----------------------------------------------------
+
     const startCameraBtn = document.getElementById('startCameraBtn');
     const uploadInput = document.getElementById('uploadInput');
     const preview = document.getElementById('preview');
