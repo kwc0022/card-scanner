@@ -319,7 +319,6 @@
         addressInput.value = foundAddress;
 
         statusDiv.innerText = "✅ 掃描完成！請檢閱下方資訊。";
-        
         formCard.style.display = 'block';
         
         setTimeout(function() {
@@ -351,8 +350,8 @@
       document.body.removeChild(link);
     });
 
-    // --- 核心修正：完美清理與轉義備註文字，確保 iOS 不會報錯 ---
-    saveBtn.addEventListener('click', async function() {
+    // --- 核心修正：針對 iOS 原生聯絡人直達設計 ---
+    saveBtn.addEventListener('click', function() {
       const company = companyInput.value || '';
       const cname = cnameInput.value || '';
       const efname = efnameInput.value || '';
@@ -368,9 +367,7 @@
       if (ename) fullName += fullName ? ` (${ename})` : ename;
       if (!fullName) fullName = '未知聯絡人';
 
-      // 針對 iOS vCard 格式進行嚴格轉義：
-      // 1. 將所有隱藏的換行符號 (\r\n 或 \r 或 \n) 替換為 vCard 標準的字面 \n
-      // 2. 將分號 (;) 與 逗號 (,) 加上反斜線轉義，避免被 iOS 誤認為欄位分隔符號
+      // 針對 vCard 備註的跳脫處理
       let formattedNote = rawText
         .replace(/\r\n|\r|\n/g, '\\n')
         .replace(/;/g, '\\;')
@@ -387,18 +384,15 @@ ADR;TYPE=WORK:;;${address};;;;
 NOTE:${formattedNote}
 END:VCARD`;
 
-      const file = new File([vcardData], `${fullName}.vcf`, { type: 'text/vcard' });
+      // 判斷是否為 iOS 裝置 (iPhone/iPad)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: '匯入聯絡人',
-          });
-        } catch (error) {
-          console.log('使用者取消分享或發生錯誤', error);
-        }
+      if (isIOS) {
+        // iOS 專屬：利用 Data URI 強制跳轉，直接喚起原生的聯絡人預覽畫面
+        const dataUri = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcardData);
+        window.location.href = dataUri;
       } else {
+        // 其他系統 (電腦、Android) 保持傳統檔案下載，Android 下載後會自動詢問是否加入聯絡人
         const blob = new Blob([vcardData], { type: 'text/vcard;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -407,6 +401,7 @@ END:VCARD`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     });
   </script>
