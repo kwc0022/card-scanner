@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>名片一拍即存</title>
+  <title>名片拍力存</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
@@ -27,8 +27,7 @@
       color: var(--text-main); min-height: 100vh;
     }
 
-    .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; margin-top: 10px; }
-    .header-logo { height: 2.5em; object-fit: contain; filter: drop-shadow(0 0 10px var(--neon-cyan)); }
+    .header-container { display: flex; align-items: center; justify-content: center; margin-bottom: 25px; margin-top: 10px; }
     
     h2 { 
       margin: 0; font-family: 'Orbitron', sans-serif; font-weight: 900; 
@@ -53,9 +52,7 @@
     .card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
     .card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
 
-    /* -------------------------------------------
-       新增：輕微光束動態效果 (方框跑動光線)
-       ------------------------------------------- */
+    /* 輕微光束動態效果 */
     .glow-box {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       overflow: hidden; pointer-events: none; border-radius: inherit; z-index: 1;
@@ -70,7 +67,6 @@
       background: linear-gradient(180deg, transparent, var(--neon-purple), transparent);
       opacity: 0.7;
     }
-    /* 速度放慢至 6 秒，保持不干擾視覺的優雅感 */
     .glow-top { top: 0; left: -100%; animation: run-right 6s linear infinite; }
     .glow-bottom { bottom: 0; right: -100%; animation: run-left 6s linear infinite 3s; background: linear-gradient(270deg, transparent, var(--neon-purple), transparent); }
     .glow-left { top: -100%; left: 0; animation: run-down 6s linear infinite 1.5s; background: linear-gradient(180deg, transparent, var(--neon-cyan), transparent); }
@@ -81,14 +77,12 @@
     @keyframes run-down { 0% { top: -100%; } 100% { top: 100%; } }
     @keyframes run-up { 0% { bottom: -100%; } 100% { bottom: 100%; } }
 
-    /* 確保卡片內部內容在光束上方可點擊 */
     .card > *:not(.glow-box) { position: relative; z-index: 2; }
 
     .dev-note-container { margin-bottom: 25px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
     .dev-note { color: var(--neon-purple); font-size: 15px; font-weight: 700; margin: 0 0 6px 0; text-shadow: 0 0 8px rgba(176, 38, 255, 0.5); }
     .dev-note-sub { color: var(--text-muted); font-size: 13px; margin: 0; letter-spacing: 1px; }
     
-    /* 按鈕設計 */
     .btn { 
       display: block; width: 100%; padding: 16px; 
       background: rgba(0, 229, 255, 0.05); 
@@ -144,16 +138,13 @@
     .name-group { display: flex; gap: 15px; }
     .name-group div { flex: 1; }
     
-    /* 預覽圖完美服貼，不留黑邊 */
     #preview { width: 100%; height: auto; object-fit: contain; border-radius: 4px; display: none; margin-bottom: 15px; border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(41, 121, 255, 0.3); }
     
     #status { color: var(--neon-purple); font-weight: 700; text-align: center; margin-bottom: 15px; font-size: 15px; letter-spacing: 1px; text-shadow: 0 0 8px rgba(176, 38, 255, 0.5); }
     #uploadInput { display: none; }
     .hint-text { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
 
-    /* -------------------------------------------
-       WebRTC HUD 掃描器介面
-       ------------------------------------------- */
+    /* WebRTC HUD 掃描器介面 */
     #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: #020205; z-index: 9999; }
     #cameraVideo { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; filter: contrast(1.1); }
     .scanner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; z-index: 10000; }
@@ -172,7 +163,6 @@
     .scanner-box .corner-top-right { top: 0; right: 0; border-left: none; border-bottom: none; position: absolute; }
     .scanner-box .corner-bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; position: absolute; }
     
-    /* 放慢掃描線速度至 4 秒，並稍微調降透明度 */
     .scanner-box .laser {
       position: absolute; top: 0; left: 0; width: 100%; height: 2px;
       background: var(--neon-purple); box-shadow: 0 0 15px 2px var(--neon-purple);
@@ -187,6 +177,36 @@
     #closeScannerBtn:hover { border-color: #ff1744; color: #ff1744; box-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
     
     .hud-text { position: absolute; top: -40px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 14px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
+
+    /* -------------------------------------------
+       頁尾版權與職人精品風格區塊
+       ------------------------------------------- */
+    .footer-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 35px;
+      margin-bottom: 25px;
+      gap: 10px;
+    }
+    .footer-logo {
+      height: 1.5em;
+      object-fit: contain;
+      opacity: 0.7;
+      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.3));
+      transition: all 0.3s ease;
+    }
+    .footer-text {
+      color: var(--neon-cyan);
+      opacity: 0.5;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 3px;
+      margin: 0;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -196,7 +216,6 @@
     <video id="cameraVideo" autoplay playsinline muted></video>
     <div class="scanner-overlay">
       <div class="scanner-box" id="scannerBox">
-        <!-- 掃描框周圍的微弱跑動光束 -->
         <div class="glow-box">
           <div class="glow-line-x glow-top"></div>
           <div class="glow-line-x glow-bottom"></div>
@@ -216,12 +235,10 @@
   </div>
 
   <div class="header-container">
-    <img src="Kai logo.png" alt="KAI Logo" class="header-logo">
-    <h2>名片一拍即存</h2>
+    <h2>名片拍力存</h2>
   </div>
 
   <div class="card">
-    <!-- 主卡片四周的微弱跑動光束 -->
     <div class="glow-box">
       <div class="glow-line-x glow-top"></div>
       <div class="glow-line-x glow-bottom"></div>
@@ -245,7 +262,6 @@
   </div>
 
   <div class="card" id="formCard" style="display: none;">
-    <!-- 資訊卡片四周的微弱跑動光束 -->
     <div class="glow-box">
       <div class="glow-line-x glow-top"></div>
       <div class="glow-line-x glow-bottom"></div>
@@ -299,6 +315,12 @@
     <button id="saveBtn" class="btn btn-secondary">⬢ 匯入iPhone聯絡人</button>
   </div>
 
+  <!-- 精品職人風頁尾區塊 -->
+  <div class="footer-container">
+    <img src="Kai logo.png" alt="KAI Logo" class="footer-logo">
+    <p class="footer-text">CRAFTED BY KAI</p>
+  </div>
+
   <script>
     const startCameraBtn = document.getElementById('startCameraBtn');
     const uploadInput = document.getElementById('uploadInput');
@@ -328,6 +350,7 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
+    // 字典庫
     const twSurnames = ['趙','錢','孫','李','周','吳','鄭','王','馮','陳','褚','衛','蔣','沈','韓','楊','朱','秦','尤','許','何','呂','施','張','孔','曹','嚴','華','金','魏','陶','姜','戚','謝','鄒','喻','柏','水','竇','章','雲','蘇','潘','葛','奚','范','彭','郎','魯','韋','昌','馬','苗','鳳','花','方','俞','任','袁','柳','酆','鮑','史','唐','費','廉','岑','薛','雷','賀','倪','湯','滕','殷','羅','畢','郝','鄔','安','常','樂','于','時','傅','皮','卞','齊','康','伍','余','元','卜','顧','孟','平','黃','和','穆','蕭','尹','姚','邵','湛','汪','祁','毛','禹','狄','米','貝','明','臧','計','伏','成','戴','談','宋','茅','龐','熊','紀','舒','屈','項','祝','董','梁','杜','阮','藍','閔','席','季','麻','強','賈','路','婁','危','江','童','顏','郭','梅','盛','林','刁','鍾','徐','邱','駱','高','夏','蔡','田','樊','胡','凌','霍','虞','萬','支','柯','昝','管','盧','莫','經','房','裘','繆','干','解','應','宗','丁','宣','賁','鄧','郁','單','杭','洪','包','諸','左','石','崔','吉','鈕','龔','程','嵇','邢','滑','裴','陸','榮','翁','荀','羊','於','惠','甄','麴','家','封','芮','羿','儲','靳','汲','邴','糜','松','井','段','富','巫','烏','焦','巴','弓','牧','隗','山','谷','車','侯','宓','蓬','全','郗','班','仰','秋','仲','伊','宮','寧','仇','欒','暴','甘','鈄','厲','戎','祖','武','符','劉','景','詹','束','龍','葉','幸','司','韶','郜','黎','薊','薄','印','宿','白','懷','蒲','邰','從','鄂','索','咸','籍','賴','卓','藺','屠','蒙','池','喬','陰','鬱','胥','能','蒼','雙','聞','莘','黨','翟','譚','貢','勞','逄','姬','申','扶','堵','冉','宰','酈','雍','卻','璩','桑','桂','濮','牛','壽','通','邊','扈','燕','冀','郟','浦','尚','農','溫','別','莊','晏','柴','瞿','閻','充','慕','連','茹','習','宦','艾','魚','容','向','古','易','慎','戈','廖','庾','終','暨','居','衡','步','都','耿','滿','弘','匡','國','文','寇','廣','祿','闕','東','歐','殳','沃','利','蔚','越','夔','隆','師','鞏','厍','聶','晁','勾','敖','融','冷','訾','辛','闞','那','簡','饒','空','曾','毋','沙','乜','養','鞠','須','豐','巢','關','蒯','相','查','后','荊','紅','遊','竺','權','逯','蓋','益','桓','公','歐陽','太史','端木','上官','司馬','東方','獨孤','南宮','萬俟','聞人','夏侯','諸葛','尉遲','公羊','赫連','澹臺','皇甫','宗政','濮陽','公冶','太叔','申屠','公孫','慕容','仲孫','鍾離','長孫','宇文','司徒','鮮于','司空','閭丘','子車','亓官','司寇','巫馬','公西','顓孫','壤駟','公良','漆雕','樂正','宰父','穀梁','拓跋','夾谷','軒轅','令狐','段干','百里','呼延','東郭','南門','羊舌','微生','公戶','公玉','公儀','梁丘','公仲','公叔','公伯','朝','宗','鄶','鄺'];
     const enSurnames = ['CHEN','LIN','HUANG','CHANG','LEE','WANG','WU','LIU','TSAI','YANG','HSU','CHENG','HSIEH','HUNG','KUO','CHIU','TSENG','LIAO','LAI','CHOU','PAN','SU','YEH','CHUANG','LU','CHIANG','HO','HSIAO','LO','KAO','CHIEN','SHIH','CHUNG','PENG','SHEN','YEN','TSAO','WEI','CHIN','YU','MA','SUN','TING','FENG','WEN','TU','YANG','CHOU','WU','CHENG','CHANG','CHU'];
     const enFirstNames = ['JOHN','DAVID','MARY','ALICE','MICHAEL','JAMES','ROBERT','WILLIAM','RICHARD','THOMAS','CHARLES','DANIEL','MATTHEW','ANTHONY','MARK','PAUL','STEVEN','ANDREW','KENNETH','JOSHUA','KEVIN','BRIAN','GEORGE','EDWARD','RONALD','TIMOTHY','JASON','JEFFREY','RYAN','JACOB','GARY','NICHOLAS','ERIC','JONATHAN','STEPHEN','LARRY','JUSTIN','SCOTT','BRANDON','BENJAMIN','SAMUEL','GREGORY','ALEXANDER','FRANK','PATRICK','RAYMOND','JACK','DENNIS','JERRY','TYLER','AARON','JOSE','ADAM','NATHAN','HENRY','DOUGLAS','ZACHARY','PETER','KYLE','WALTER','ETHAN','JEREMY','CHRISTIAN','KEITH','ROGER','TERRY','GERALD','SEAN','ARTHUR','LAWRENCE','DYLAN','JESSE','WILLIE','BRYAN','RALPH','ROY','EUGENE','WAYNE','ALAN','JUAN','LOUIS','EUGENE','RUSSELL','PETE'];
