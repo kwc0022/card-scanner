@@ -43,17 +43,13 @@
     }
     
     /* -------------------------------------------
-       圖片 Logo 樣式設計 (融合魔法在這裡)
+       圖片 Logo 樣式設計 (已移除所有特效)
        ------------------------------------------- */
     .main-logo-img {
       width: 100%;
       max-width: 320px;
       height: auto;
       display: block;
-      /* 🔥 神奇魔法：濾掉圖片的深色背景，只保留發亮元素，完美融合網頁 🔥 */
-      mix-blend-mode: screen; 
-      /* 加上輕微的霓虹光暈 */
-      filter: drop-shadow(0 4px 15px rgba(0, 229, 255, 0.15));
     }
     
     .card { 
@@ -82,7 +78,7 @@
       opacity: 0.7;
     }
     .glow-line-y {
-      position: absolute width: 2px; height: 100%;
+      position: absolute; width: 2px; height: 100%;
       background: linear-gradient(180deg, transparent, var(--neon-purple), transparent);
       opacity: 0.7;
     }
@@ -234,7 +230,7 @@
   </div>
 
   <div class="header-container">
-    <!-- 引入指定的圖片檔作為 Logo，空白已轉換為安全的 %20 編碼 -->
+    <!-- 引入指定的圖片檔作為 Logo，沒有任何多餘效果 -->
     <img src="website%20name.png" alt="名片拍立存 CARD SCANNER" class="main-logo-img">
   </div>
 
