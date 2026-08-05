@@ -194,13 +194,22 @@
     
     /* HUD 控制面板重新排版 */
     .scanner-controls { 
-      position: absolute; bottom: 80px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; 
-      display: flex; justify-content: center; align-items: center; gap: 15px; 
+      position: absolute; bottom: 60px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; 
+      display: flex; justify-content: center; align-items: flex-end; gap: 15px; 
       padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; 
+    }
+
+    .toggle-wrapper {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+
+    .toggle-text {
+      color: var(--neon-cyan); font-size: 13px; font-weight: 700;
+      letter-spacing: 1px; text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
     }
     
     #closeScannerBtn, #toggleBoxBtn { 
-      background: rgba(255,255,255,0.05); color: #fff; width: 60px; height: 60px; border-radius: 4px; 
+      background: rgba(255,255,255,0.05); color: #fff; width: 55px; height: 55px; border-radius: 4px; 
       border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; 
       cursor: pointer; backdrop-filter: blur(10px); flex-shrink: 0; transition: all 0.2s; 
     }
@@ -213,6 +222,7 @@
       background: rgba(0, 229, 255, 0.1); flex: 1; max-width: 250px; border-radius: 4px; padding: 18px; 
       font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); 
       border: 2px solid var(--neon-cyan); letter-spacing: 1px; color: var(--neon-cyan); cursor: pointer;
+      margin-bottom: 22px; /* 配合兩側小按鈕與文字的高度對齊 */
     }
     #captureBtn:active { transform: scale(0.97); }
     
@@ -249,16 +259,28 @@
       </div>
     </div>
     
-    <!-- 全新設計：加入一鍵直/橫式切換按鈕 -->
+    <!-- 直/橫模式切換與控制面板 -->
     <div class="scanner-controls">
-      <button id="closeScannerBtn">✖</button>
+      <!-- 關閉按鈕 -->
+      <div class="toggle-wrapper">
+        <button id="closeScannerBtn">✖</button>
+        <span class="toggle-text" style="visibility: hidden;">隱藏</span> <!-- 隱藏文字以維持排版平衡 -->
+      </div>
+      
+      <!-- 拍照按鈕 -->
       <button id="captureBtn" class="btn">⬢ 拍下名片</button>
-      <button id="toggleBoxBtn" title="切換直/橫模式">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-      </button>
+      
+      <!-- 直橫切換按鈕 (長方形 + 內部旋轉箭頭) -->
+      <div class="toggle-wrapper">
+        <button id="toggleBoxBtn" title="切換直/橫模式">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8"></path>
+            <polyline points="16 4 16 8 12 8"></polyline>
+          </svg>
+        </button>
+        <span id="toggleText" class="toggle-text">改直式名片</span>
+      </div>
     </div>
   </div>
 
@@ -403,7 +425,9 @@
     const scannerBox = document.getElementById('scannerBox');
     const captureBtn = document.getElementById('captureBtn');
     const closeScannerBtn = document.getElementById('closeScannerBtn');
-    const toggleBoxBtn = document.getElementById('toggleBoxBtn'); // 新增的切換按鈕
+    
+    const toggleBoxBtn = document.getElementById('toggleBoxBtn'); 
+    const toggleText = document.getElementById('toggleText');
     
     let currentStream = null;
     let isVerticalBox = false;
@@ -413,8 +437,10 @@
       isVerticalBox = !isVerticalBox;
       if (isVerticalBox) {
         scannerBox.classList.add('vertical');
+        toggleText.innerText = '改橫式名片';
       } else {
         scannerBox.classList.remove('vertical');
+        toggleText.innerText = '改直式名片';
       }
     });
 
@@ -423,6 +449,7 @@
         // 確保每次開啟相機預設為橫式框
         isVerticalBox = false;
         scannerBox.classList.remove('vertical');
+        toggleText.innerText = '改直式名片';
         
         currentStream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
@@ -445,7 +472,6 @@
 
     captureBtn.addEventListener('click', () => {
       const video = cameraVideo;
-      // 這裡會自動抓取目前變換後的直/橫框線座標，精準裁切！
       const box = scannerBox.getBoundingClientRect();
       const container = scannerContainer.getBoundingClientRect();
       
@@ -474,16 +500,22 @@
       const cropWidth = box.width * scaleX;
       const cropHeight = box.height * scaleY;
       
-      const canvas = document.createElement('canvas');
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
-      
-      stopCamera(); 
-      runOCR(dataUrl); 
+      // 加入防呆機制：確保裁切範圍大於 0 才執行，避免出錯
+      if (cropWidth > 0 && cropHeight > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
+        
+        stopCamera(); 
+        runOCR(dataUrl); 
+      } else {
+        alert("相機裁切範圍計算錯誤，請重新開啟相機。");
+        stopCamera();
+      }
     });
 
     const companyInput = document.getElementById('companyInput');
@@ -565,7 +597,8 @@
         
         statusDiv.innerText = "⬢ 智能文字解析中...";
 
-        const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+        // [修正] Tesseract 引擎呼叫方式改為最穩定字串寫法 'chi_tra+eng'
+        const worker = await Tesseract.createWorker('chi_tra+eng');
         const { data: { text } } = await worker.recognize(enhancedDataUrl);
         
         rawInput.value = text;
@@ -719,8 +752,8 @@
         
         await worker.terminate();
       } catch (error) {
-        statusDiv.innerText = "⬢ 辨識失敗，請確認圖片是否清晰。";
-        console.error(error);
+        statusDiv.innerText = "⬢ 辨識失敗，請重新嘗試或確認圖片是否清晰。";
+        console.error("OCR Error: ", error);
       } finally {
         uploadInput.value = ''; 
       }
