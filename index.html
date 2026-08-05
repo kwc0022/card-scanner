@@ -222,11 +222,12 @@
       background: rgba(0, 229, 255, 0.1); flex: 1; max-width: 250px; border-radius: 4px; padding: 18px; 
       font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); 
       border: 2px solid var(--neon-cyan); letter-spacing: 1px; color: var(--neon-cyan); cursor: pointer;
-      margin-bottom: 22px; /* 配合兩側小按鈕與文字的高度對齊 */
+      margin-bottom: 22px; 
     }
     #captureBtn:active { transform: scale(0.97); }
     
-    .hud-text { position: absolute; top: -40px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 14px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
+    .hud-text { position: absolute; top: -65px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 16px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
+    .hud-sub-text { position: absolute; top: -35px; width: 100%; text-align: center; color: #ffeb3b; letter-spacing: 1px; font-size: 13px; text-shadow: 0 0 5px rgba(255, 235, 59, 0.5); font-weight: bold; }
 
     /* 頁尾版權與職人精品風格區塊 */
     .footer-container {
@@ -256,18 +257,17 @@
         <div class="corner-bottom-left"></div>
         <div class="laser"></div>
         <div class="hud-text">⬢ 請將名片對準框線內</div>
+        <div class="hud-sub-text">※ 畫面若模糊，請將手機稍微拿遠 ※</div>
       </div>
     </div>
     
     <!-- 直/橫模式切換與控制面板 -->
     <div class="scanner-controls">
-      <!-- 關閉按鈕 -->
       <div class="toggle-wrapper">
         <button id="closeScannerBtn">✖</button>
-        <span class="toggle-text" style="visibility: hidden;">隱藏</span> <!-- 隱藏文字以維持排版平衡 -->
+        <span class="toggle-text" style="visibility: hidden;">隱藏</span> 
       </div>
       
-      <!-- 拍照按鈕 -->
       <button id="captureBtn" class="btn">⬢ 拍下名片</button>
       
       <!-- 直橫切換按鈕 (長方形 + 內部旋轉箭頭) -->
@@ -399,17 +399,6 @@
       const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
       const manifestUrl = URL.createObjectURL(manifestBlob);
       document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestUrl}">`);
-
-      const swCode = `
-        self.addEventListener('install', (e) => { self.skipWaiting(); });
-        self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
-        self.addEventListener('fetch', (e) => { });
-      `;
-      const swBlob = new Blob([swCode], {type: 'application/javascript'});
-      const swUrl = URL.createObjectURL(swBlob);
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register(swUrl).then(() => console.log('PWA Engine Activated.'));
-      }
     })();
 
     const startCameraBtn = document.getElementById('startCameraBtn');
@@ -446,14 +435,29 @@
 
     startCameraBtn.addEventListener('click', async () => {
       try {
-        // 確保每次開啟相機預設為橫式框
         isVerticalBox = false;
         scannerBox.classList.remove('vertical');
         toggleText.innerText = '改直式名片';
         
-        currentStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
-        });
+        // 加入強制連續自動對焦指令
+        let constraints = { 
+          video: { 
+            facingMode: 'environment', 
+            width: { ideal: 1920 }, 
+            height: { ideal: 1080 },
+            advanced: [{ focusMode: "continuous" }] 
+          } 
+        };
+
+        try {
+          currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (e) {
+          // 如果部分舊手機不支援 advanced 指令，退回標準模式
+          currentStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+          });
+        }
+        
         cameraVideo.srcObject = currentStream;
         scannerContainer.style.display = 'block';
       } catch (err) {
@@ -500,7 +504,6 @@
       const cropWidth = box.width * scaleX;
       const cropHeight = box.height * scaleY;
       
-      // 加入防呆機制：確保裁切範圍大於 0 才執行，避免出錯
       if (cropWidth > 0 && cropHeight > 0) {
         const canvas = document.createElement('canvas');
         canvas.width = cropWidth;
@@ -508,6 +511,7 @@
         const ctx = canvas.getContext('2d');
         
         ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        // 移除了破壞性濾鏡，直接輸出高畫質原圖交給 AI
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
         
         stopCamera(); 
@@ -531,6 +535,14 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
+    const twSurnames = ['趙','錢','孫','李','周','吳','鄭','王','馮','陳','褚','衛','蔣','沈','韓','楊','朱','秦','尤','許','何','呂','施','張','孔','曹','嚴','華','金','魏','陶','姜','戚','謝','鄒','喻','柏','水','竇','章','雲','蘇','潘','葛','奚','范','彭','郎','魯','韋','昌','馬','苗','鳳','花','方','俞','任','袁','柳','酆','鮑','史','唐','費','廉','岑','薛','雷','賀','倪','湯','滕','殷','羅','畢','郝','鄔','安','常','樂','于','時','傅','皮','卞','齊','康','伍','余','元','卜','顧','孟','平','黃','和','穆','蕭','尹','姚','邵','湛','汪','祁','毛','禹','狄','米','貝','明','臧','計','伏','成','戴','談','宋','茅','龐','熊','紀','舒','屈','項','祝','董','梁','杜','阮','藍','閔','席','季','麻','強','賈','路','婁','危','江','童','顏','郭','梅','盛','林','刁','鍾','徐','邱','駱','高','夏','蔡','田','樊','胡','凌','霍','虞','萬','支','柯','昝','管','盧','莫','經','房','裘','繆','干','解','應','宗','丁','宣','賁','鄧','郁','單','杭','洪','包','諸','左','石','崔','吉','鈕','龔','程','嵇','邢','滑','裴','陸','榮','翁','荀','羊','於','惠','甄','麴','家','封','芮','羿','儲','靳','汲','邴','糜','松','井','段','富','巫','烏','焦','巴','弓','牧','隗','山','谷','車','侯','宓','蓬','全','郗','班','仰','秋','仲','伊','宮','寧','仇','欒','暴','甘','鈄','厲','戎','祖','武','符','劉','景','詹','束','龍','葉','幸','司','韶','郜','黎','薊','薄','印','宿','白','懷','蒲','邰','從','鄂','索','咸','籍','賴','卓','藺','屠','蒙','池','喬','陰','鬱','胥','能','蒼','雙','聞','莘','黨','翟','譚','貢','勞','逄','姬','申','扶','堵','冉','宰','酈','雍','卻','璩','桑','桂','濮','牛','壽','通','邊','扈','燕','冀','郟','浦','尚','農','溫','別','莊','晏','柴','瞿','閻','充','慕','連','茹','習','宦','艾','魚','容','向','古','易','慎','戈','廖','庾','終','暨','居','衡','步','都','耿','滿','弘','匡','國','文','寇','廣','祿','闕','東','歐','殳','沃','利','蔚','越','夔','隆','師','鞏','厍','聶','晁','勾','敖','融','冷','訾','辛','闞','那','簡','饒','空','曾','毋','沙','乜','養','鞠','須','豐','巢','關','蒯','相','查','后','荊','紅','遊','竺','權','逯','蓋','益','桓','公','歐陽','太史','端木','上官','司馬','東方','獨孤','南宮','萬俟','聞人','夏侯','諸葛','尉遲','公羊','赫連','澹臺','皇甫','宗政','濮陽','公冶','太叔','申屠','公孫','慕容','仲孫','鍾離','長孫','宇文','司徒','鮮于','司空','閭丘','子車','亓官','司寇','巫馬','公西','顓孫','壤駟','公良','漆雕','樂正','宰父','穀梁','拓跋','夾谷','軒轅','令狐','段干','百里','呼延','東郭','南門','羊舌','微生','公戶','公玉','公儀','梁丘','公仲','公叔','公伯','朝','宗','鄶','鄺'];
+    const enSurnames = ['CHEN','LIN','HUANG','CHANG','LEE','WANG','WU','LIU','TSAI','YANG','HSU','CHENG','HSIEH','HUNG','KUO','CHIU','TSENG','LIAO','LAI','CHOU','PAN','SU','YEH','CHUANG','LU','CHIANG','HO','HSIAO','LO','KAO','CHIEN','SHIH','CHUNG','PENG','SHEN','YEN','TSAO','WEI','CHIN','YU','MA','SUN','TING','FENG','WEN','TU','YANG','CHOU','WU','CHENG','CHANG','CHU'];
+    const enFirstNames = ['JOHN','DAVID','MARY','ALICE','MICHAEL','JAMES','ROBERT','WILLIAM','RICHARD','THOMAS','CHARLES','DANIEL','MATTHEW','ANTHONY','MARK','PAUL','STEVEN','ANDREW','KENNETH','JOSHUA','KEVIN','BRIAN','GEORGE','EDWARD','RONALD','TIMOTHY','JASON','JEFFREY','RYAN','JACOB','GARY','NICHOLAS','ERIC','JONATHAN','STEPHEN','LARRY','JUSTIN','SCOTT','BRANDON','BENJAMIN','SAMUEL','GREGORY','ALEXANDER','FRANK','PATRICK','RAYMOND','JACK','DENNIS','JERRY','TYLER','AARON','JOSE','ADAM','NATHAN','HENRY','DOUGLAS','ZACHARY','PETER','KYLE','WALTER','ETHAN','JEREMY','CHRISTIAN','KEITH','ROGER','TERRY','GERALD','SEAN','ARTHUR','LAWRENCE','DYLAN','JESSE','WILLIE','BRYAN','RALPH','ROY','EUGENE','WAYNE','ALAN','JUAN','LOUIS','EUGENE','RUSSELL','PETE'];
+    const cJobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師', '行銷', '企劃', '廣告', '數據', '分析', '社群', '公關', '產品', '專案', '優化', '顧問', '策略', '營運'];
+    const eJobTitles = ['CEO', 'CTO', 'COO', 'CMO', 'CFO', 'DIRECTOR', 'MANAGER', 'ENGINEER', 'ANALYST', 'MARKETING', 'SPECIALIST', 'CONSULTANT', 'EXECUTIVE', 'DESIGNER', 'PLANNER', 'ACCOUNT', 'SALES', 'LEADER', 'HEAD', 'DATA', 'PR'];
+
+    let currentImageUrl = ''; 
+
     uploadInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -538,68 +550,20 @@
       runOCR(imgUrl);
     });
 
-    function enhanceImage(imageUrl) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          const scale = 1.1; 
-          let width = img.width * scale;
-          let height = img.height * scale;
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const imageData = ctx.getImageData(0, 0, width, height);
-          const data = imageData.data;
-          
-          const contrast = 20; 
-          const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-          for (let i = 0; i < data.length; i += 4) {
-            let r = data[i], g = data[i+1], b = data[i+2];
-
-            let lum = 0.299 * r + 0.587 * g + 0.114 * b;
-            r = lum + 1.4 * (r - lum);
-            g = lum + 1.4 * (g - lum);
-            b = lum + 1.4 * (b - lum);
-
-            r = factor * (r - 128) + 128;
-            g = factor * (g - 128) + 128;
-            b = factor * (b - 128) + 128;
-
-            data[i] = Math.min(255, Math.max(0, r));
-            data[i+1] = Math.min(255, Math.max(0, g));
-            data[i+2] = Math.min(255, Math.max(0, b));
-          }
-          ctx.putImageData(imageData, 0, 0);
-          resolve(canvas.toDataURL('image/jpeg', 0.95));
-        };
-        img.src = imageUrl;
-      });
-    }
-
     async function runOCR(imageUrl) {
       formCard.style.display = 'none';
-      statusDiv.innerText = "⬢ 影像強化處理中...";
+      statusDiv.innerText = "⬢ 智能文字解析中...";
+      currentImageUrl = imageUrl;
+      
+      preview.src = currentImageUrl;
+      preview.style.display = 'block';
+      saveImgBtn.style.display = 'block';
+      imageHint.style.display = 'block';
       
       try {
-        const enhancedDataUrl = await enhanceImage(imageUrl);
-        currentImageUrl = enhancedDataUrl;
-        
-        preview.src = currentImageUrl;
-        preview.style.display = 'block';
-        saveImgBtn.style.display = 'block';
-        imageHint.style.display = 'block';
-        
-        statusDiv.innerText = "⬢ 智能文字解析中...";
-
-        // [修正] Tesseract 引擎呼叫方式改為最穩定字串寫法 'chi_tra+eng'
-        const worker = await Tesseract.createWorker('chi_tra+eng');
-        const { data: { text } } = await worker.recognize(enhancedDataUrl);
+        // 退回最穩定不崩潰的陣列寫法
+        const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
+        const { data: { text } } = await worker.recognize(imageUrl);
         
         rawInput.value = text;
         const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -752,8 +716,8 @@
         
         await worker.terminate();
       } catch (error) {
-        statusDiv.innerText = "⬢ 辨識失敗，請重新嘗試或確認圖片是否清晰。";
-        console.error("OCR Error: ", error);
+        statusDiv.innerText = "⬢ 辨識失敗，請確認照片中的文字是否清晰。";
+        console.error(error);
       } finally {
         uploadInput.value = ''; 
       }
