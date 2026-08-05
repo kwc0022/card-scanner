@@ -198,12 +198,25 @@
     .scanner-box .corner-top-right { top: 0; right: 0; border-left: none; border-bottom: none; position: absolute; }
     .scanner-box .corner-bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; position: absolute; }
     
-    .scanner-box .laser {
-      position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-      background: var(--neon-purple); box-shadow: 0 0 15px 2px var(--neon-purple);
-      animation: scan-line 4s ease-in-out infinite alternate; z-index: 2;
+    /* 新增：正中央十字瞄準器 */
+    .crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 60px; height: 60px; pointer-events: none; z-index: 5;
     }
-    @keyframes scan-line { 0% { top: 0; opacity: 0.3; } 50% { opacity: 0.8; } 100% { top: 100%; opacity: 0.3; } }
+    .crosshair::before, .crosshair::after {
+      content: ''; position: absolute; background: rgba(0, 229, 255, 0.6);
+      box-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
+    }
+    /* 橫線 */
+    .crosshair::before { top: 50%; left: 0; width: 100%; height: 1.5px; transform: translateY(-50%); }
+    /* 直線 */
+    .crosshair::after { left: 50%; top: 0; height: 100%; width: 1.5px; transform: translateX(-50%); }
+    /* 中心光點 */
+    .crosshair-center {
+      position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+      background: #fff; border-radius: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px #00e5ff;
+    }
     
     .hud-text { position: absolute; top: -65px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 16px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
     .hud-sub-text { position: absolute; top: -35px; width: 100%; text-align: center; color: #ffeb3b; letter-spacing: 1px; font-size: 13px; text-shadow: 0 0 5px rgba(255, 235, 59, 0.5); font-weight: bold; }
@@ -272,7 +285,10 @@
         </div>
         <div class="corner-top-right"></div>
         <div class="corner-bottom-left"></div>
-        <div class="laser"></div>
+        <!-- 替換：十字瞄準線 -->
+        <div class="crosshair">
+          <div class="crosshair-center"></div>
+        </div>
         <div class="hud-text">⬢ 請將名片對準框線內</div>
         <div class="hud-sub-text">※ 輕觸畫面可輔助對焦，若模糊請拿遠 ※</div>
       </div>
@@ -581,19 +597,44 @@
       runOCR(imgUrl);
     });
 
+    // 徹底移除會把名片變全黑/全白的破壞性對比濾鏡，改為單純將圖片放大兩倍，交由 AI 自行判斷
+    function enhanceImage(imageUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // 放大 2 倍以提供給 OCR 更好的細節解析度
+          const scale = 2.0; 
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          resolve(canvas.toDataURL('image/jpeg', 1.0));
+        };
+        img.src = imageUrl;
+      });
+    }
+
     async function runOCR(imageUrl) {
       formCard.style.display = 'none';
-      statusDiv.innerText = "⬢ 智能文字解析中...";
-      currentImageUrl = imageUrl;
-      
-      preview.src = currentImageUrl;
-      preview.style.display = 'block';
-      saveImgBtn.style.display = 'block';
-      imageHint.style.display = 'block';
+      statusDiv.innerText = "⬢ 影像強化處理中...";
       
       try {
-        const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
-        const { data: { text } } = await worker.recognize(imageUrl);
+        const enhancedDataUrl = await enhanceImage(imageUrl);
+        currentImageUrl = enhancedDataUrl;
+        
+        preview.src = currentImageUrl;
+        preview.style.display = 'block';
+        saveImgBtn.style.display = 'block';
+        imageHint.style.display = 'block';
+        
+        statusDiv.innerText = "⬢ 智能文字解析中...";
+
+        // 使用最穩定相容寫法 chi_tra+eng
+        const worker = await Tesseract.createWorker('chi_tra+eng');
+        const { data: { text } } = await worker.recognize(enhancedDataUrl);
         
         rawInput.value = text;
         const rawLines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -746,10 +787,8 @@
         
         await worker.terminate();
       } catch (error) {
-        statusDiv.innerText = "⬢ 辨識失敗，請重新嘗試或確認圖片是否清晰。";
-        console.error("OCR Error: ", error);
-      } finally {
-        uploadInput.value = ''; 
+        statusDiv.innerText = "⬢ 辨識失敗，請確認相機畫面是否清晰。";
+        console.error(error);
       }
     }
     
