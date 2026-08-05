@@ -156,28 +156,42 @@
     #uploadInput { display: none; }
     .hint-text { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; display: none; font-weight: 500;}
 
-    /* WebRTC HUD 掃描器介面 */
+    /* -------------------------------------------
+       WebRTC HUD 掃描器介面與新版佈局
+       ------------------------------------------- */
     #scannerContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: #020205; z-index: 9999; }
     #cameraVideo { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; filter: contrast(1.1); }
-    .scanner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; z-index: 10000; }
+    
+    /* 點擊對焦框動畫 */
+    .focus-ring {
+      position: absolute; width: 70px; height: 70px; border: 2px solid #ffeb3b; border-radius: 4px;
+      transform: translate(-50%, -50%) scale(1.5); opacity: 0; pointer-events: none; z-index: 10005;
+      box-shadow: 0 0 10px rgba(255, 235, 59, 0.5), inset 0 0 10px rgba(255, 235, 59, 0.5);
+    }
+    .focus-ring.active { animation: focus-pulse 0.8s ease-out forwards; }
+    @keyframes focus-pulse {
+      0% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+      40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    /* 置中對齊的疊加層 */
+    .scanner-overlay { 
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      overflow: hidden; pointer-events: none; z-index: 10000; 
+    }
     
     /* 掃描框動畫與直橫切換支援 */
     .scanner-box { 
       width: 85%; aspect-ratio: 1.6 / 1; 
-      position: relative;
-      box-shadow: 0 0 0 4000px rgba(0, 0, 7, 0.75);
-      border-radius: 4px;
+      position: relative; box-shadow: 0 0 0 4000px rgba(0, 0, 7, 0.75); border-radius: 4px;
       transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    
-    .scanner-box.vertical {
-      width: 65%;
-      aspect-ratio: 1 / 1.6;
-    }
+    .scanner-box.vertical { width: 65%; aspect-ratio: 1 / 1.6; }
 
     .scanner-box::before, .scanner-box::after, .scanner-box .corner-top-right, .scanner-box .corner-bottom-left {
-      content: ''; position: absolute; width: 40px; height: 40px; border: 3px solid var(--neon-cyan); border-radius: 2px;
-      transition: all 0.4s ease;
+      content: ''; position: absolute; width: 40px; height: 40px; border: 3px solid var(--neon-cyan); border-radius: 2px; transition: all 0.4s ease;
     }
     .scanner-box::before { top: 0; left: 0; border-right: none; border-bottom: none; }
     .scanner-box::after { bottom: 0; right: 0; border-left: none; border-top: none; }
@@ -187,47 +201,46 @@
     .scanner-box .laser {
       position: absolute; top: 0; left: 0; width: 100%; height: 2px;
       background: var(--neon-purple); box-shadow: 0 0 15px 2px var(--neon-purple);
-      animation: scan-line 4s ease-in-out infinite alternate;
-      z-index: 2;
+      animation: scan-line 4s ease-in-out infinite alternate; z-index: 2;
     }
     @keyframes scan-line { 0% { top: 0; opacity: 0.3; } 50% { opacity: 0.8; } 100% { top: 100%; opacity: 0.3; } }
     
-    /* HUD 控制面板重新排版 */
-    .scanner-controls { 
-      position: absolute; bottom: 60px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; 
-      display: flex; justify-content: center; align-items: flex-end; gap: 15px; 
-      padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; 
-    }
-
-    .toggle-wrapper {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-    }
-
-    .toggle-text {
-      color: var(--neon-cyan); font-size: 13px; font-weight: 700;
-      letter-spacing: 1px; text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
-    }
-    
-    #closeScannerBtn, #toggleBoxBtn { 
-      background: rgba(255,255,255,0.05); color: #fff; width: 55px; height: 55px; border-radius: 4px; 
-      border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; 
-      cursor: pointer; backdrop-filter: blur(10px); flex-shrink: 0; transition: all 0.2s; 
-    }
-    #closeScannerBtn { font-size: 24px; }
-    
-    #closeScannerBtn:hover { border-color: #ff1744; color: #ff1744; box-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
-    #toggleBoxBtn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
-    
-    #captureBtn { 
-      background: rgba(0, 229, 255, 0.1); flex: 1; max-width: 250px; border-radius: 4px; padding: 18px; 
-      font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); 
-      border: 2px solid var(--neon-cyan); letter-spacing: 1px; color: var(--neon-cyan); cursor: pointer;
-      margin-bottom: 22px; 
-    }
-    #captureBtn:active { transform: scale(0.97); }
-    
     .hud-text { position: absolute; top: -65px; width: 100%; text-align: center; color: var(--neon-cyan); letter-spacing: 1px; font-size: 16px; text-shadow: 0 0 5px var(--neon-cyan); font-weight: bold; }
     .hud-sub-text { position: absolute; top: -35px; width: 100%; text-align: center; color: #ffeb3b; letter-spacing: 1px; font-size: 13px; text-shadow: 0 0 5px rgba(255, 235, 59, 0.5); font-weight: bold; }
+
+    /* 切換按鈕獨立移到掃描框下方 */
+    .mode-switch-container {
+      margin-top: 35px;
+      pointer-events: auto; /* 允許點擊 */
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    #toggleBoxBtn { 
+      background: rgba(0, 0, 0, 0.6); color: #fff; width: 65px; height: 65px; border-radius: 50%; 
+      border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; 
+      cursor: pointer; backdrop-filter: blur(10px); transition: all 0.2s; 
+    }
+    #toggleBoxBtn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+    .toggle-text { color: var(--neon-cyan); font-size: 14px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 5px rgba(0, 229, 255, 0.5); }
+
+    /* 底部控制面板：只留關閉與拍照 */
+    .scanner-controls { 
+      position: absolute; bottom: 40px; padding-bottom: env(safe-area-inset-bottom); left: 0; width: 100%; 
+      display: flex; justify-content: center; align-items: center; gap: 20px; 
+      padding-left: 20px; padding-right: 20px; box-sizing: border-box; z-index: 10001; pointer-events: auto;
+    }
+    #closeScannerBtn { 
+      background: rgba(255,255,255,0.05); color: #fff; width: 65px; height: 65px; border-radius: 50%; 
+      border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; 
+      cursor: pointer; backdrop-filter: blur(10px); flex-shrink: 0; transition: all 0.2s; font-size: 24px;
+    }
+    #closeScannerBtn:hover { border-color: #ff1744; color: #ff1744; box-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
+    
+    #captureBtn { 
+      background: rgba(0, 229, 255, 0.1); flex: 1; max-width: 250px; border-radius: 35px; padding: 18px; 
+      font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); 
+      border: 2px solid var(--neon-cyan); letter-spacing: 1px; color: var(--neon-cyan); cursor: pointer;
+    }
+    #captureBtn:active { transform: scale(0.97); }
 
     /* 頁尾版權與職人精品風格區塊 */
     .footer-container {
@@ -245,6 +258,10 @@
   <!-- HUD 相機掃描器 -->
   <div id="scannerContainer">
     <video id="cameraVideo" autoplay playsinline muted></video>
+    
+    <!-- 點擊對焦的視覺光圈 -->
+    <div id="focusRing" class="focus-ring"></div>
+
     <div class="scanner-overlay">
       <div class="scanner-box" id="scannerBox">
         <div class="glow-box">
@@ -257,23 +274,13 @@
         <div class="corner-bottom-left"></div>
         <div class="laser"></div>
         <div class="hud-text">⬢ 請將名片對準框線內</div>
-        <div class="hud-sub-text">※ 畫面若模糊，請將手機稍微拿遠 ※</div>
-      </div>
-    </div>
-    
-    <!-- 直/橫模式切換與控制面板 -->
-    <div class="scanner-controls">
-      <div class="toggle-wrapper">
-        <button id="closeScannerBtn">✖</button>
-        <span class="toggle-text" style="visibility: hidden;">隱藏</span> 
+        <div class="hud-sub-text">※ 輕觸畫面可輔助對焦，若模糊請拿遠 ※</div>
       </div>
       
-      <button id="captureBtn" class="btn">⬢ 拍下名片</button>
-      
-      <!-- 直橫切換按鈕 (長方形 + 內部旋轉箭頭) -->
-      <div class="toggle-wrapper">
+      <!-- 直橫切換按鈕 (置於掃描框正下方) -->
+      <div class="mode-switch-container">
         <button id="toggleBoxBtn" title="切換直/橫模式">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <path d="M16 11.37A4 4 0 1 1 12.63 8"></path>
             <polyline points="16 4 16 8 12 8"></polyline>
@@ -281,6 +288,12 @@
         </button>
         <span id="toggleText" class="toggle-text">改直式名片</span>
       </div>
+    </div>
+    
+    <!-- 底部控制面板 -->
+    <div class="scanner-controls">
+      <button id="closeScannerBtn">✖</button>
+      <button id="captureBtn" class="btn">⬢ 拍下名片</button>
     </div>
   </div>
 
@@ -417,6 +430,7 @@
     
     const toggleBoxBtn = document.getElementById('toggleBoxBtn'); 
     const toggleText = document.getElementById('toggleText');
+    const focusRing = document.getElementById('focusRing');
     
     let currentStream = null;
     let isVerticalBox = false;
@@ -433,13 +447,39 @@
       }
     });
 
+    // 點擊螢幕顯示對焦框，並強制連續對焦
+    scannerContainer.addEventListener('click', (e) => {
+      // 避免按到按鈕時也跑出對焦框
+      if (e.target.closest('button') || e.target.closest('.mode-switch-container') || e.target.closest('.scanner-controls')) return;
+
+      focusRing.style.left = e.clientX + 'px';
+      focusRing.style.top = e.clientY + 'px';
+      
+      focusRing.classList.remove('active');
+      void focusRing.offsetWidth; 
+      focusRing.classList.add('active');
+
+      if (currentStream) {
+        const track = currentStream.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+           track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(err => {});
+        }
+      }
+    });
+
     startCameraBtn.addEventListener('click', async () => {
       try {
         isVerticalBox = false;
         scannerBox.classList.remove('vertical');
         toggleText.innerText = '改直式名片';
         
-        // 加入強制連續自動對焦指令
+        // 若相機已經在背景待機，直接播放即可 (免去重複詢問權限)
+        if (currentStream && currentStream.active) {
+            cameraVideo.play();
+            scannerContainer.style.display = 'block';
+            return;
+        }
+
         let constraints = { 
           video: { 
             facingMode: 'environment', 
@@ -452,7 +492,6 @@
         try {
           currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (e) {
-          // 如果部分舊手機不支援 advanced 指令，退回標準模式
           currentStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
           });
@@ -467,8 +506,9 @@
     });
 
     function stopCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
+      // 核心修改：不關閉串流，只暫停影片並隱藏 UI，避免下次詢問權限
+      if (cameraVideo) {
+          cameraVideo.pause();
       }
       scannerContainer.style.display = 'none';
     }
@@ -511,7 +551,6 @@
         const ctx = canvas.getContext('2d');
         
         ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-        // 移除了破壞性濾鏡，直接輸出高畫質原圖交給 AI
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
         
         stopCamera(); 
@@ -535,14 +574,6 @@
     const rawInput = document.getElementById('rawInput');
     const saveBtn = document.getElementById('saveBtn');
 
-    const twSurnames = ['趙','錢','孫','李','周','吳','鄭','王','馮','陳','褚','衛','蔣','沈','韓','楊','朱','秦','尤','許','何','呂','施','張','孔','曹','嚴','華','金','魏','陶','姜','戚','謝','鄒','喻','柏','水','竇','章','雲','蘇','潘','葛','奚','范','彭','郎','魯','韋','昌','馬','苗','鳳','花','方','俞','任','袁','柳','酆','鮑','史','唐','費','廉','岑','薛','雷','賀','倪','湯','滕','殷','羅','畢','郝','鄔','安','常','樂','于','時','傅','皮','卞','齊','康','伍','余','元','卜','顧','孟','平','黃','和','穆','蕭','尹','姚','邵','湛','汪','祁','毛','禹','狄','米','貝','明','臧','計','伏','成','戴','談','宋','茅','龐','熊','紀','舒','屈','項','祝','董','梁','杜','阮','藍','閔','席','季','麻','強','賈','路','婁','危','江','童','顏','郭','梅','盛','林','刁','鍾','徐','邱','駱','高','夏','蔡','田','樊','胡','凌','霍','虞','萬','支','柯','昝','管','盧','莫','經','房','裘','繆','干','解','應','宗','丁','宣','賁','鄧','郁','單','杭','洪','包','諸','左','石','崔','吉','鈕','龔','程','嵇','邢','滑','裴','陸','榮','翁','荀','羊','於','惠','甄','麴','家','封','芮','羿','儲','靳','汲','邴','糜','松','井','段','富','巫','烏','焦','巴','弓','牧','隗','山','谷','車','侯','宓','蓬','全','郗','班','仰','秋','仲','伊','宮','寧','仇','欒','暴','甘','鈄','厲','戎','祖','武','符','劉','景','詹','束','龍','葉','幸','司','韶','郜','黎','薊','薄','印','宿','白','懷','蒲','邰','從','鄂','索','咸','籍','賴','卓','藺','屠','蒙','池','喬','陰','鬱','胥','能','蒼','雙','聞','莘','黨','翟','譚','貢','勞','逄','姬','申','扶','堵','冉','宰','酈','雍','卻','璩','桑','桂','濮','牛','壽','通','邊','扈','燕','冀','郟','浦','尚','農','溫','別','莊','晏','柴','瞿','閻','充','慕','連','茹','習','宦','艾','魚','容','向','古','易','慎','戈','廖','庾','終','暨','居','衡','步','都','耿','滿','弘','匡','國','文','寇','廣','祿','闕','東','歐','殳','沃','利','蔚','越','夔','隆','師','鞏','厍','聶','晁','勾','敖','融','冷','訾','辛','闞','那','簡','饒','空','曾','毋','沙','乜','養','鞠','須','豐','巢','關','蒯','相','查','后','荊','紅','遊','竺','權','逯','蓋','益','桓','公','歐陽','太史','端木','上官','司馬','東方','獨孤','南宮','萬俟','聞人','夏侯','諸葛','尉遲','公羊','赫連','澹臺','皇甫','宗政','濮陽','公冶','太叔','申屠','公孫','慕容','仲孫','鍾離','長孫','宇文','司徒','鮮于','司空','閭丘','子車','亓官','司寇','巫馬','公西','顓孫','壤駟','公良','漆雕','樂正','宰父','穀梁','拓跋','夾谷','軒轅','令狐','段干','百里','呼延','東郭','南門','羊舌','微生','公戶','公玉','公儀','梁丘','公仲','公叔','公伯','朝','宗','鄶','鄺'];
-    const enSurnames = ['CHEN','LIN','HUANG','CHANG','LEE','WANG','WU','LIU','TSAI','YANG','HSU','CHENG','HSIEH','HUNG','KUO','CHIU','TSENG','LIAO','LAI','CHOU','PAN','SU','YEH','CHUANG','LU','CHIANG','HO','HSIAO','LO','KAO','CHIEN','SHIH','CHUNG','PENG','SHEN','YEN','TSAO','WEI','CHIN','YU','MA','SUN','TING','FENG','WEN','TU','YANG','CHOU','WU','CHENG','CHANG','CHU'];
-    const enFirstNames = ['JOHN','DAVID','MARY','ALICE','MICHAEL','JAMES','ROBERT','WILLIAM','RICHARD','THOMAS','CHARLES','DANIEL','MATTHEW','ANTHONY','MARK','PAUL','STEVEN','ANDREW','KENNETH','JOSHUA','KEVIN','BRIAN','GEORGE','EDWARD','RONALD','TIMOTHY','JASON','JEFFREY','RYAN','JACOB','GARY','NICHOLAS','ERIC','JONATHAN','STEPHEN','LARRY','JUSTIN','SCOTT','BRANDON','BENJAMIN','SAMUEL','GREGORY','ALEXANDER','FRANK','PATRICK','RAYMOND','JACK','DENNIS','JERRY','TYLER','AARON','JOSE','ADAM','NATHAN','HENRY','DOUGLAS','ZACHARY','PETER','KYLE','WALTER','ETHAN','JEREMY','CHRISTIAN','KEITH','ROGER','TERRY','GERALD','SEAN','ARTHUR','LAWRENCE','DYLAN','JESSE','WILLIE','BRYAN','RALPH','ROY','EUGENE','WAYNE','ALAN','JUAN','LOUIS','EUGENE','RUSSELL','PETE'];
-    const cJobTitles = ['董事長', '總經理', '副總經理', '總監', '執行長', '協理', '經理', '副理', '襄理', '主任', '專員', '工程師', '業務', '負責人', '代表', '設計師', '行銷', '企劃', '廣告', '數據', '分析', '社群', '公關', '產品', '專案', '優化', '顧問', '策略', '營運'];
-    const eJobTitles = ['CEO', 'CTO', 'COO', 'CMO', 'CFO', 'DIRECTOR', 'MANAGER', 'ENGINEER', 'ANALYST', 'MARKETING', 'SPECIALIST', 'CONSULTANT', 'EXECUTIVE', 'DESIGNER', 'PLANNER', 'ACCOUNT', 'SALES', 'LEADER', 'HEAD', 'DATA', 'PR'];
-
-    let currentImageUrl = ''; 
-
     uploadInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -561,7 +592,6 @@
       imageHint.style.display = 'block';
       
       try {
-        // 退回最穩定不崩潰的陣列寫法
         const worker = await Tesseract.createWorker(['chi_tra', 'eng']);
         const { data: { text } } = await worker.recognize(imageUrl);
         
@@ -716,8 +746,8 @@
         
         await worker.terminate();
       } catch (error) {
-        statusDiv.innerText = "⬢ 辨識失敗，請確認照片中的文字是否清晰。";
-        console.error(error);
+        statusDiv.innerText = "⬢ 辨識失敗，請重新嘗試或確認圖片是否清晰。";
+        console.error("OCR Error: ", error);
       } finally {
         uploadInput.value = ''; 
       }
